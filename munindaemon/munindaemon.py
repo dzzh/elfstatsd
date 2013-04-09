@@ -4,6 +4,7 @@
 import ConfigParser
 import logging
 import datetime
+import os
 import re
 import time
 import math
@@ -18,7 +19,7 @@ class MuninDaemon():
         self.stdin_path = '/dev/null'
         self.stdout_path = '/dev/tty'
         self.stderr_path = '/dev/tty'
-        self.pidfile_path =  '/var/run/munindaemon/munindaemon.pid'
+        self.pidfile_path =  os.path.join(munindaemon_settings.DAEMON_PID_DIR, 'munindaemon.pid')
         self.pidfile_timeout = 5
 
         #Beginning of the analysis period
@@ -38,8 +39,8 @@ class MuninDaemon():
             started = datetime.datetime.now()
             logger.info('Daemon invoked at ' + str(started))
 
-            file_at_period_start = self.format_filename(munindaemon_settings.LOG_FILE,self.period_start)
-            file_at_started = self.format_filename(munindaemon_settings.LOG_FILE,started)
+            file_at_period_start = self.format_filename(munindaemon_settings.APACHE_LOG_FILE,self.period_start)
+            file_at_started = self.format_filename(munindaemon_settings.APACHE_LOG_FILE,started)
 
             #If the daemon has just started, it has seek=0, this value has to be adjusted to period_start
             if self.seek == 0:
@@ -86,7 +87,7 @@ class MuninDaemon():
 
     def adjust_seek(self):
         """Is needed to correctly set seek value when daemon is launched or file name changes"""
-        file = self.format_filename(munindaemon_settings.LOG_FILE,self.period_start)
+        file = self.format_filename(munindaemon_settings.APACHE_LOG_FILE,self.period_start)
         f = open(file, 'r')
         while True:
             seek_candidate = f.tell()
@@ -281,7 +282,7 @@ daemon = MuninDaemon()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-handler = logging.FileHandler("/var/log/munindaemon/munindaemon.log")
+handler = logging.FileHandler(os.path.join(munindaemon_settings.DAEMON_LOG_DIR, 'munindaemon.log'))
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 

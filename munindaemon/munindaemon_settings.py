@@ -1,5 +1,9 @@
 import re
 
+DAEMON_DIR = '/usr/share/munindaemon'
+DAEMON_PID_DIR = '/var/run/munindaemon'
+DAEMON_LOG_DIR = '/var/log/munindaemon'
+
 #Time interval in seconds between two daemon invocations
 INTERVAL = 300
 
@@ -10,7 +14,7 @@ STALLED_CALL_THRESHOLD = 4000
 DUMP_FILE  = '/tmp/munindaemon.data'
 
 #Apache access log file to parse
-LOG_FILE = '/home/zmicier/Downloads/community.access.log-%Y-%m-%d-%H'
+APACHE_LOG_FILE = '/home/zmicier/Downloads/community.access.log-%Y-%m-%d-%H'
 
 #Only the requests matching this regex qualify for further processing
 VALID_REQUEST = re.compile('^(/content|/serv)/')
