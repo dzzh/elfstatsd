@@ -10,7 +10,7 @@ import math
 import bisect
 from daemon import runner
 from types import NoneType
-import settings
+import munindaemon_settings
 
 class MuninDaemon():
 
@@ -22,7 +22,7 @@ class MuninDaemon():
         self.pidfile_timeout = 5
 
         #Beginning of the analysis period
-        self.period_start = datetime.datetime.now() + datetime.timedelta(seconds=-settings.INTERVAL)
+        self.period_start = datetime.datetime.now() + datetime.timedelta(seconds=-munindaemon_settings.INTERVAL)
 
         #Position in the file to start reading
         self.seek = 0
@@ -38,8 +38,8 @@ class MuninDaemon():
             started = datetime.datetime.now()
             logger.info('Daemon invoked at ' + str(started))
 
-            file_at_period_start = self.format_filename(settings.LOG_FILE,self.period_start)
-            file_at_started = self.format_filename(settings.LOG_FILE,started)
+            file_at_period_start = self.format_filename(munindaemon_settings.LOG_FILE,self.period_start)
+            file_at_started = self.format_filename(munindaemon_settings.LOG_FILE,started)
 
             #If the daemon has just started, it has seek=0, this value has to be adjusted to period_start
             if self.seek == 0:
@@ -60,8 +60,8 @@ class MuninDaemon():
             elapsed_seconds = (finished-started).seconds
             elapsed_microseconds = (finished-started).microseconds
             elapsed_microseconds /= 1000000.0
-            if elapsed_seconds < settings.INTERVAL:
-                time.sleep(settings.INTERVAL-elapsed_seconds-elapsed_microseconds)
+            if elapsed_seconds < munindaemon_settings.INTERVAL:
+                time.sleep(munindaemon_settings.INTERVAL-elapsed_seconds-elapsed_microseconds)
 
     def parse_line(self,line):
         """Convert a line from a log into LogRecord
@@ -86,7 +86,7 @@ class MuninDaemon():
 
     def adjust_seek(self):
         """Is needed to correctly set seek value when daemon is launched or file name changes"""
-        file = self.format_filename(settings.LOG_FILE,self.period_start)
+        file = self.format_filename(munindaemon_settings.LOG_FILE,self.period_start)
         f = open(file, 'r')
         while True:
             seek_candidate = f.tell()
@@ -177,12 +177,12 @@ class MuninDaemon():
             dump.set(section,str(code),value)
         #Add response codes from settings with 0 value if they are not met in logs
         #Is needed for Munin not to drop these codes from the charts
-        for code in settings.RESPONSE_CODES:
+        for code in munindaemon_settings.RESPONSE_CODES:
             if not code in self.response_codes_stats.keys():
                 dump.set(section,str(code),0)
 
 
-        with open(settings.DUMP_FILE, 'wb') as f:
+        with open(munindaemon_settings.DUMP_FILE, 'wb') as f:
             dump.write(f)
 
     def cleanup(self, started):
@@ -236,12 +236,12 @@ class LogRecord():
         """Return cleaned method name from a request string"""
         split = self.request.split('/')
         name = split[2] + '_' + split[3].split('?')[0]
-        valid_name = re.sub(settings.BAD_SYMBOLS,'',name)
+        valid_name = re.sub(munindaemon_settings.BAD_SYMBOLS,'',name)
         return valid_name
 
     def is_valid(self):
         """Determine whether a record is in proper form for processing"""
-        return re.search(settings.VALID_REQUEST,self.request)
+        return re.search(munindaemon_settings.VALID_REQUEST,self.request)
 
 class CalledMethod():
 
@@ -264,7 +264,7 @@ class CalledMethod():
         return int(round(d0+d1))
 
     def stalled(self):
-        stalled = [i for i in self.calls if i > settings.STALLED_CALL_THRESHOLD]
+        stalled = [i for i in self.calls if i > munindaemon_settings.STALLED_CALL_THRESHOLD]
         return len(stalled)
 
     def min(self):
