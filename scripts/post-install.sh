@@ -1,4 +1,4 @@
-VIRTUALENV_PATH='/virtualenvs/munin'
+VIRTUALENV_PATH='/srv/virtualenvs/munin'
 
 mkdir /usr/share/munindaemon
 mkdir /var/log/munindaemon

@@ -1,5 +1,5 @@
-"""A daemon parsing Apache access logs and dumping aggregated results to the file.
-   This dump file can be later used by Munin or other clients to monitor server behavior in near-real-time.
+"""A daemon parsing Apache access logs and dumping aggregated results to the files.
+   These dump files can later be used by Munin or other clients to monitor server behavior in near-real-time.
 """
 import ConfigParser
 import logging
@@ -26,7 +26,7 @@ class MuninDaemon():
         self.period_start = datetime.datetime.now() + datetime.timedelta(seconds=-munindaemon_settings.INTERVAL)
 
         #Position in the file to start reading
-        self.seek = 0
+        self.seek = {}
 
         #Storages for round statistics
         self.method_stats = dict()
@@ -39,24 +39,28 @@ class MuninDaemon():
             started = datetime.datetime.now()
             logger.info('Daemon invoked at ' + str(started))
 
-            file_at_period_start = self.format_filename(munindaemon_settings.APACHE_LOG_FILE,self.period_start)
-            file_at_started = self.format_filename(munindaemon_settings.APACHE_LOG_FILE,started)
+            for log_file, dump_file in munindaemon_settings.DATA_FILES:
 
-            #If the daemon has just started, it has seek=0, this value has to be adjusted to period_start
-            if self.seek == 0:
-                self.adjust_seek()
+                #Generate file names from a template and timestamps
+                file_at_period_start = self.format_filename(log_file,self.period_start)
+                file_at_started = self.format_filename(log_file,started)
 
-            if file_at_period_start == file_at_started:
-                #All the records we are interested in are in the same file
-                self.process_file(file_at_started, read_to_time=started)
-            else:
-                #First read previous file to the end, then current from beginning
-                self.process_file(file_at_period_start)
-                self.process_file(file_at_started, read_from_start=True, read_to_time=started)
+                #If the daemon has just started, it does not have seek for the input file and it has to be adjusted to period_start
+                if not file_at_period_start in self.seek.keys:
+                    self.adjust_seek(file_at_period_start)
 
-            self.dump_stats()
-            self.cleanup(started)
+                if file_at_period_start == file_at_started:
+                    #All the records we are interested in are in the same file
+                    self.process_file(file_at_started, read_to_time=started)
+                else:
+                    #First read previous file to the end, then current from beginning
+                    self.process_file(file_at_period_start)
+                    self.process_file(file_at_started, read_from_start=True, read_to_time=started)
 
+                self.dump_stats(dump_file)
+                self.cleanup()
+
+            self.period_start = started
             finished = datetime.datetime.now()
             elapsed_seconds = (finished-started).seconds
             elapsed_microseconds = (finished-started).microseconds
@@ -65,7 +69,8 @@ class MuninDaemon():
                 time.sleep(munindaemon_settings.INTERVAL-elapsed_seconds-elapsed_microseconds)
 
     def parse_line(self,line):
-        """Convert a line from a log into LogRecord
+        """
+        Convert a line from a log into LogRecord.
 
         Contains code that parses log records. This code may need to be changed if Apache log format changes.
         """
@@ -85,9 +90,8 @@ class MuninDaemon():
             return None
         return record
 
-    def adjust_seek(self):
+    def adjust_seek(self, file):
         """Is needed to correctly set seek value when daemon is launched or file name changes"""
-        file = self.format_filename(munindaemon_settings.APACHE_LOG_FILE,self.period_start)
         f = open(file, 'r')
         while True:
             seek_candidate = f.tell()
@@ -98,7 +102,7 @@ class MuninDaemon():
             if record:
                 dt = record.get_time()
                 if dt and dt > self.period_start:
-                    self.seek = seek_candidate
+                    self.seek[file] = seek_candidate
                     break
         f.close()
 
@@ -119,14 +123,14 @@ class MuninDaemon():
         f = open(file, 'r')
 
         if not read_from_start:
-            f.seek(self.seek)
+            f.seek(self.seek[file])
 
         while True:
             current_seek = f.tell()
             line = f.readline()
             if not line:
                 #Reached end of file, record seek and stop
-                self.seek = current_seek
+                self.seek[file] = current_seek
                 break
             record = self.parse_line(line)
             if not record:
@@ -140,7 +144,7 @@ class MuninDaemon():
                 if time >= read_to_time:
                     #Reached a record with timestamp higher than end of current analysis period
                     #Stop here and leave it for the next invocation.
-                    self.seek = current_seek
+                    self.seek[file] = current_seek
                     break
             if record.is_valid():
                 self.process_record(record)
@@ -157,7 +161,7 @@ class MuninDaemon():
             self.add_call(record.get_method_name(),record.latency)
             self.add_response_code(record.response_code)
 
-    def dump_stats(self):
+    def dump_stats(self, file):
         """Dump statistics to DUMP_FILE in ConfigParser format"""
         dump = ConfigParser.RawConfigParser()
         for method in self.method_stats.values():
@@ -183,12 +187,11 @@ class MuninDaemon():
                 dump.set(section,str(code),0)
 
 
-        with open(munindaemon_settings.DUMP_FILE, 'wb') as f:
+        with open(file, 'wb') as f:
             dump.write(f)
 
-    def cleanup(self, started):
+    def cleanup(self):
         """Prepare values for the next round"""
-        self.period_start = started
         self.method_stats.clear()
         self.response_codes_stats.clear()
 

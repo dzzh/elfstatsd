@@ -14,7 +14,7 @@
 # Description:    Runs up the munindaemon process
 ### END INIT INFO
 
-VIRTUALENV_PATH='/virtualenvs/munin'
+VIRTUALENV_PATH='/srv/virtualenvs/munin'
 
 #Activate virtualenv
 source $VIRTUALENV_PATH/bin/activate

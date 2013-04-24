@@ -10,11 +10,11 @@ INTERVAL = 300
 #Value in milliseconds to consider a call stalled and report it additionally
 STALLED_CALL_THRESHOLD = 4000
 
-#File to store statistics dumps
-DUMP_FILE  = '/tmp/munindaemon.data'
-
-#Apache access log file to parse
-APACHE_LOG_FILE = '/home/zmicier/Downloads/community.access.log-%Y-%m-%d-%H'
+#A list of tuples containing input and output data files
+DATA_FILES = [
+    ('/home/zmicier/Downloads/community.access.log-%Y-%m-%d-%H', '/tmp/munindaemon-community.data'),
+    ('/home/zmicier/Downloads/csharing.access.log-%Y-%m-%d-%H', '/tmp/munindaemon-csharing.data'),
+]
 
 #Only the requests matching this regex qualify for further processing
 VALID_REQUEST = re.compile('^(/content|/serv)/')
