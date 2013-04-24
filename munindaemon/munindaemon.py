@@ -46,7 +46,7 @@ class MuninDaemon():
                 file_at_started = self.format_filename(log_file,started)
 
                 #If the daemon has just started, it does not have seek for the input file and it has to be adjusted to period_start
-                if not file_at_period_start in self.seek.keys:
+                if not file_at_period_start in self.seek.keys():
                     self.adjust_seek(file_at_period_start)
 
                 if file_at_period_start == file_at_started:
@@ -149,7 +149,7 @@ class MuninDaemon():
             if record.is_valid():
                 self.process_record(record)
             else:
-                logger.info('Request not processed: ' + record.request)
+                logger.debug('Request not processed: ' + record.request)
 
     def process_record(self,record):
         """Update statistics storages with values of a current record

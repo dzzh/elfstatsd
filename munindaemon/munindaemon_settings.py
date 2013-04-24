@@ -12,8 +12,8 @@ STALLED_CALL_THRESHOLD = 4000
 
 #A list of tuples containing input and output data files
 DATA_FILES = [
-    ('/home/zmicier/Downloads/community.access.log-%Y-%m-%d-%H', '/tmp/munindaemon-community.data'),
-    ('/home/zmicier/Downloads/csharing.access.log-%Y-%m-%d-%H', '/tmp/munindaemon-csharing.data'),
+    ('/srv/log/httpd/community.access.log-%Y-%m-%d-%H', '/tmp/munindaemon-community.data'),
+    ('/srv/log/httpd/csharing.access.log-%Y-%m-%d-%H', '/tmp/munindaemon-csharing.data'),
 ]
 
 #Only the requests matching this regex qualify for further processing
