@@ -24,3 +24,9 @@ BAD_SYMBOLS = re.compile('[.-]')
 
 #Response codes to track in all rounds, even if they are not found in logs
 RESPONSE_CODES = [200,204,301,302,303,304,307,404,500,501,502,503,504]
+
+#Maximum size of a single log file, in bytes
+MAX_LOG_FILE_SIZE=10000000
+
+#Maximum number of log files to keep
+MAX_LOG_FILES=5

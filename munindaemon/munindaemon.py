@@ -11,6 +11,7 @@ import math
 import bisect
 from daemon import runner
 from types import NoneType
+from logging.handlers import RotatingFileHandler
 import munindaemon_settings
 
 class MuninDaemon():
@@ -300,7 +301,8 @@ daemon = MuninDaemon()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-handler = logging.FileHandler(os.path.join(munindaemon_settings.DAEMON_LOG_DIR, 'munindaemon.log'))
+handler = RotatingFileHandler(os.path.join(munindaemon_settings.DAEMON_LOG_DIR, 'munindaemon.log'),
+    maxBytes=munindaemon_settings.MAX_LOG_FILE_SIZE, backupCount=munindaemon_settings.MAX_LOG_FILES)
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
