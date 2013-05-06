@@ -1,5 +1,12 @@
 import re
 
+#Munindaemon assumes that Apache log file is in the following format:
+#Field 4 - time
+#Field 8 - request
+#Field 9 - response code
+#Last field - latency
+#In next versions of a daemon it will be possible to specify Apache log format in this config file.
+
 DAEMON_DIR = '/usr/share/munindaemon'
 DAEMON_PID_DIR = '/var/run/munindaemon'
 DAEMON_LOG_DIR = '/var/log/munindaemon'

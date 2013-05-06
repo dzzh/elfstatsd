@@ -18,8 +18,8 @@ class MuninDaemon():
 
     def __init__(self):
         self.stdin_path = '/dev/null'
-        self.stdout_path = '/dev/tty'
-        self.stderr_path = '/dev/tty'
+        self.stdout_path = '/dev/null'
+        self.stderr_path = '/dev/null'
         self.pidfile_path =  os.path.join(munindaemon_settings.DAEMON_PID_DIR, 'munindaemon.pid')
         self.pidfile_timeout = 5
 
@@ -106,7 +106,10 @@ class MuninDaemon():
             seek_candidate = f.tell()
             line = f.readline()
             if not line:
-                raise EOFError
+                #reached end of file, maybe no new records were added within tracked period
+                # or we have opened a newly created empty file
+                self.seek[file] = seek_candidate
+                break
             record = self.parse_line(line)
             if record:
                 dt = record.get_time()
