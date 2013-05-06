@@ -45,6 +45,8 @@ class MuninDaemon():
                 file_at_period_start = self.format_filename(log_file,self.period_start)
                 file_at_started = self.format_filename(log_file,started)
 
+                #File processing. If a file cannot be read, daemon just logs an error and continues execution.
+
                 #If the daemon has just started, it does not have seek for the input file and it has to be adjusted to period_start
                 if not file_at_period_start in self.seek.keys():
                     self.adjust_seek(file_at_period_start)
@@ -92,7 +94,13 @@ class MuninDaemon():
 
     def adjust_seek(self, file):
         """Is needed to correctly set seek value when daemon is launched or file name changes"""
-        f = open(file, 'r')
+        try:
+            f = open(file, 'r')
+        except IOError as e:
+            logger.error('Could not open file %s' %file)
+            logger.error('I/O error({0}): {1}'.format(e.errno, e.strerror))
+            return 1
+
         while True:
             seek_candidate = f.tell()
             line = f.readline()
@@ -119,8 +127,15 @@ class MuninDaemon():
         @param bool read_from_start: if true, read from beginning of file, otherwise from self.seek
         @param datetime read_to_time: if set, records are parsed until their time is greater or equal of parameter value. \
         Otherwise the file is read till the end.
+
+        If the file is not found or cannot be read, an error is logged and the function returns
         """
-        f = open(file, 'r')
+        try:
+            f = open(file, 'r')
+        except IOError as e:
+            logger.error('Could not open file %s' %file)
+            logger.error('I/O error({0}): {1}'.format(e.errno, e.strerror))
+            return 1
 
         if not read_from_start:
             f.seek(self.seek[file])
