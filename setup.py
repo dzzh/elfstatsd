@@ -9,7 +9,7 @@ setup(
     author_email='Zmicier.Zaleznicenka@tomtom.com',
     url='http://vos.intra.local/display/SS3/Monitoring+Apache+performance+at+Community+servers+with+Munin',
     packages=['munindaemon'],
-    requires=['daemon(>=1.6)','lockfile(>=0.9)','apachelog(>=1.0)'],
+    requires=['daemon(>=1.6)','lockfile(>=0.9)'],
     platforms=['Linux'],
     scripts = ['munindaemon/munindaemon.py'],
     data_files = [
