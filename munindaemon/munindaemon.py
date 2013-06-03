@@ -43,6 +43,12 @@ class MuninDaemon():
 
             for log_file, dump_file in munindaemon_settings.DATA_FILES:
 
+                #create entries in dictionaries with aggregated data
+                storage_key = dump_file
+                if not storage_key in self.method_stats:
+                    self.method_stats[storage_key] = dict()
+                    self.response_codes_stats[storage_key] = dict()
+
                 #Generate file names from a template and timestamps
                 file_at_period_start = self.format_filename(log_file,self.period_start)
                 file_at_started = self.format_filename(log_file,started)
@@ -55,14 +61,14 @@ class MuninDaemon():
 
                 if file_at_period_start == file_at_started:
                     #All the records we are interested in are in the same file
-                    self.process_file(file_at_started, read_to_time=started)
+                    self.process_file(storage_key, file_at_started, read_to_time=started)
                 else:
                     #First read previous file to the end, then current from beginning
-                    self.process_file(file_at_period_start)
-                    self.process_file(file_at_started, read_from_start=True, read_to_time=started)
+                    self.process_file(storage_key, file_at_period_start)
+                    self.process_file(storage_key, file_at_started, read_from_start=True, read_to_time=started)
 
                 self.dump_stats(dump_file)
-                self.cleanup()
+                self.cleanup(storage_key)
 
             self.period_start = started
             finished = datetime.datetime.now()
@@ -128,11 +134,12 @@ class MuninDaemon():
         """Generate file name from a template containing formatted string and time value"""
         return dt.strftime(name)
 
-    def process_file(self, file, read_from_start=False, read_to_time=None):
+    def process_file(self, storage_key, file, read_from_start=False, read_to_time=None):
         """Read recent part of the log file, update statistics storages, adjust seek.
 
         If only file parameter is supplied, reads file from self.seek to the end.
 
+        @param str storage_key: a key to define statistics storage
         @param string file: path to file for parsing
         @param bool read_from_start: if true, read from beginning of file, otherwise from self.seek
         @param datetime read_to_time: if set, records are parsed until their time is greater or equal of parameter value. \
@@ -174,24 +181,26 @@ class MuninDaemon():
                     self.seek[file] = current_seek
                     break
             if record.is_valid():
-                self.process_record(record)
+                self.process_record(storage_key,record)
             else:
                 logger.debug('Request not processed: ' + record.request)
 
-    def process_record(self,record):
+    def process_record(self,storage_key,record):
         """Update statistics storages with values of a current record
 
+        @param str storage_key: a key to define statistics storage
         @param LogRecord|None record: record to process
 
         """
         if record:
-            self.add_call(record.get_method_name(),record.latency)
-            self.add_response_code(record.response_code)
+            self.add_call(storage_key,record.get_method_name(),record.latency)
+            self.add_response_code(storage_key,record.response_code)
 
     def dump_stats(self, file):
         """Dump statistics to DUMP_FILE in ConfigParser format"""
+        storage_key = file
         dump = ConfigParser.RawConfigParser()
-        for method in self.method_stats.values():
+        for method in self.method_stats[storage_key].values():
             section = 'method_' + method.name
             dump.add_section(section)
             dump.set(section,'calls',len(method.calls))
@@ -205,43 +214,53 @@ class MuninDaemon():
 
         section = 'response_codes'
         dump.add_section(section)
-        for code,value in self.response_codes_stats.iteritems():
+        for code,value in self.response_codes_stats[storage_key].iteritems():
             dump.set(section,str(code),value)
         #Add response codes from settings with 0 value if they are not met in logs
         #Is needed for Munin not to drop these codes from the charts
         for code in munindaemon_settings.RESPONSE_CODES:
-            if not code in self.response_codes_stats.keys():
+            if not code in self.response_codes_stats[storage_key].keys():
                 dump.set(section,str(code),0)
-
 
         with open(file, 'wb') as f:
             dump.write(f)
 
-    def cleanup(self):
-        """Prepare values for the next round"""
-        self.method_stats.clear()
-        self.response_codes_stats.clear()
+    def cleanup(self,storage_key):
+        """Prepare values for the next round.
+           Save the method names and existed response codes to keep them in Munin output.
+           @param str storage_key: a key to define statistics storage
+        """
+        for method in self.method_stats[storage_key].values():
+            method.calls = []
+        for code in self.response_codes_stats[storage_key]:
+            self.response_codes_stats[storage_key][code] = 0
 
-    def get_called_method_stats(self,name):
-        """Get a CalledMethod instance from a storage. If there is no record, place a new there first."""
+    def get_called_method_stats(self,storage_key,name):
+        """Get a CalledMethod instance from a storage. If there is no record, place a new there first.
+        @param str storage_key: a key to define statistics storage
+        """
         try:
-            return self.method_stats[name]
+            return self.method_stats[storage_key][name]
         except KeyError:
             method = CalledMethod(name)
-            self.method_stats[name] = method
+            self.method_stats[storage_key][name] = method
             return method
 
-    def add_call(self,name,latency):
-        """Adds latency of a given call to the storage"""
-        method = self.get_called_method_stats(name)
+    def add_call(self,storage_key,name,latency):
+        """Adds latency of a given call to the storage
+        @param str storage_key: a key to define statistics storage
+        """
+        method = self.get_called_method_stats(storage_key,name)
         bisect.insort(method.calls,latency)
 
-    def add_response_code(self,code):
-        """Remember response code in the storage"""
-        if code in self.response_codes_stats:
-            self.response_codes_stats[code] += 1
+    def add_response_code(self,storage_key,code):
+        """Remember response code in the storage
+        @param str storage_key: a key to define statistics storage
+        """
+        if code in self.response_codes_stats[storage_key]:
+            self.response_codes_stats[storage_key][code] += 1
         else:
-            self.response_codes_stats[code] = 1
+            self.response_codes_stats[storage_key][code] = 1
 
 
 class LogRecord():
@@ -284,7 +303,11 @@ class CalledMethod():
         """Compute percentile of values in an array
 
         @param float percent: percent from 0.0 to 1.0
+        @return int: percent or 0 if no values are found
         """
+        if not len(self.calls):
+            return 0
+
         k = (len(self.calls)-1) * percent
         f = math.floor(k)
         c = math.ceil(k)
@@ -295,16 +318,28 @@ class CalledMethod():
         return int(round(d0+d1))
 
     def stalled(self):
+        """
+        Return number of stalled calls
+        """
         stalled = [i for i in self.calls if i > munindaemon_settings.STALLED_CALL_THRESHOLD]
         return len(stalled)
 
     def min(self):
-        return self.calls[0]
+        if self.calls:
+            return self.calls[0]
+        else:
+            return 0
 
     def max(self):
-        return self.calls[-1]
+        if self.calls:
+            return self.calls[-1]
+        else:
+            return 0
 
     def avg(self):
+        if not self.calls:
+            return 0
+
         return sum(self.calls)/len(self.calls)
 
 
