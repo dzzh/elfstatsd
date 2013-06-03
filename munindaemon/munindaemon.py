@@ -4,6 +4,7 @@
 import ConfigParser
 import logging
 import datetime
+import apachelog
 import os
 import re
 import time
@@ -71,23 +72,26 @@ class MuninDaemon():
             if elapsed_seconds < munindaemon_settings.INTERVAL:
                 time.sleep(munindaemon_settings.INTERVAL-elapsed_seconds-elapsed_microseconds)
 
-    def parse_line(self,line):
+    def parse_line(self,line,log_parser):
         """
         Convert a line from a log into LogRecord.
 
         Contains code that parses log records. This code may need to be changed if Apache log format changes.
+        @param unicode line: log line to parse
+        @param ApacheLogParser log_parser: instance of ApacheLogParser containing log format description
         """
 
         record = LogRecord()
-        split = line.split(" ")
-        record.line = line
+
         try:
-            record.time = split[3][1:]
-            record.request = split[6]
-            record.response_code = int(split[8])
+            data = log_parser.parse(line)
+            record.line = line
+            record.time = apachelog.parse_date(data['%t'])
+            record.request = data['%r'].split(' ')[1]
+            record.response_code = int(data['%>s'])
             #Latency rounded to the nearest millisecond
-            record.latency = int(round(int(split[-1])/1000.0))
-        except ValueError:
+            record.latency = int(round(int(data['%D'])/1000.0))
+        except apachelog.ApacheLogParserError:
             logger.warn('Parser has caught an error while processing the following record: ')
             logger.warn(line)
             return None
@@ -102,6 +106,8 @@ class MuninDaemon():
             logger.error('I/O error({0}): {1}'.format(e.errno, e.strerror))
             return 1
 
+        log_parser = apachelog.parser(munindaemon_settings.APACHE_LOG_FORMAT)
+
         while True:
             seek_candidate = f.tell()
             line = f.readline()
@@ -110,7 +116,7 @@ class MuninDaemon():
                 # or we have opened a newly created empty file
                 self.seek[file] = seek_candidate
                 break
-            record = self.parse_line(line)
+            record = self.parse_line(line,log_parser)
             if record:
                 dt = record.get_time()
                 if dt and dt > self.period_start:
@@ -144,6 +150,8 @@ class MuninDaemon():
         if not read_from_start:
             f.seek(self.seek[file])
 
+        log_parser = apachelog.parser(munindaemon_settings.APACHE_LOG_FORMAT)
+
         while True:
             current_seek = f.tell()
             line = f.readline()
@@ -151,7 +159,7 @@ class MuninDaemon():
                 #Reached end of file, record seek and stop
                 self.seek[file] = current_seek
                 break
-            record = self.parse_line(line)
+            record = self.parse_line(line,log_parser)
             if not record:
                 continue
             if read_to_time:
@@ -249,7 +257,7 @@ class LogRecord():
     def get_time(self):
         dt = None
         try:
-            dt = datetime.datetime.strptime(self.time,'%d/%b/%Y:%H:%M:%S')
+            dt = datetime.datetime.strptime(self.time[0],'%Y%m%d%H%M%S')
         except ValueError:
             logger.warn('Could not parse time string "%s" for the following log record:' % self.time)
             logger.warn(self.line)

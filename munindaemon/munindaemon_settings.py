@@ -1,11 +1,6 @@
 import re
 
-#Munindaemon assumes that Apache log file is in the following format:
-#Field 4 - time
-#Field 8 - request
-#Field 9 - response code
-#Last field - latency
-#In next versions of a daemon it will be possible to specify Apache log format in this config file.
+APACHE_LOG_FORMAT = r'%h %l %u %t \"%r\" %>s %B \"%{Referer}i\" \"%{User-Agent}i\" %{JK_LB_FIRST_NAME}n %{JK_LB_LAST_NAME}n %{JK_LB_LAST_STATE}n %I %O %D'
 
 DAEMON_DIR = '/usr/share/munindaemon'
 DAEMON_PID_DIR = '/var/run/munindaemon'
@@ -24,7 +19,7 @@ DATA_FILES = [
 ]
 
 #Only the requests matching this regex qualify for further processing
-VALID_REQUEST = re.compile('^(/content|/serv)/')
+VALID_REQUEST = re.compile('^/content/')
 
 #Symbols to be removed from method names (Munin cannot process them in field names)
 BAD_SYMBOLS = re.compile('[.-]')
