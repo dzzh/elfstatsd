@@ -220,7 +220,7 @@ class MuninDaemon():
         #Is needed for Munin not to drop these codes from the charts
         for code in munindaemon_settings.RESPONSE_CODES:
             if not code in self.response_codes_stats[storage_key].keys():
-                dump.set(section,str(code),'')
+                dump.set(section,str(code),self.format_value(''))
 
         with open(file, 'wb') as f:
             dump.write(f)
@@ -229,7 +229,7 @@ class MuninDaemon():
         """
         Formats value for proper processing by Munin.
         """
-        return value if value else ''
+        return value if value else 'U'
 
     def cleanup(self,storage_key):
         """Prepare values for the next round.
