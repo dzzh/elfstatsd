@@ -203,27 +203,33 @@ class MuninDaemon():
         for method in self.method_stats[storage_key].values():
             section = 'method_' + method.name
             dump.add_section(section)
-            dump.set(section,'calls',len(method.calls))
-            dump.set(section,'stalled_calls',method.stalled())
-            dump.set(section, 'shortest', method.min())
-            dump.set(section, 'longest', method.max())
-            dump.set(section,'average', method.avg())
-            dump.set(section,'p50',method.percentile(0.50))
-            dump.set(section,'p90',method.percentile(0.90))
-            dump.set(section,'p99',method.percentile(0.99))
+            dump.set(section,'calls',self.format_value(method.num_calls))
+            dump.set(section,'stalled_calls',self.format_value(method.stalled))
+            dump.set(section, 'shortest', self.format_value(method.min))
+            dump.set(section, 'longest', self.format_value(method.max))
+            dump.set(section,'average', self.format_value(method.avg))
+            dump.set(section,'p50',self.format_value(method.percentile(0.50)))
+            dump.set(section,'p90',self.format_value(method.percentile(0.90)))
+            dump.set(section,'p99',self.format_value(method.percentile(0.99)))
 
         section = 'response_codes'
         dump.add_section(section)
         for code,value in self.response_codes_stats[storage_key].iteritems():
-            dump.set(section,str(code),value)
+            dump.set(section,str(code),self.format_value(value))
         #Add response codes from settings with 0 value if they are not met in logs
         #Is needed for Munin not to drop these codes from the charts
         for code in munindaemon_settings.RESPONSE_CODES:
             if not code in self.response_codes_stats[storage_key].keys():
-                dump.set(section,str(code),0)
+                dump.set(section,str(code),'')
 
         with open(file, 'wb') as f:
             dump.write(f)
+
+    def format_value(self,value):
+        """
+        Formats value for proper processing by Munin.
+        """
+        return value if value else ''
 
     def cleanup(self,storage_key):
         """Prepare values for the next round.
@@ -293,11 +299,16 @@ class LogRecord():
         """Determine whether a record is in proper form for processing"""
         return re.search(munindaemon_settings.VALID_REQUEST,self.request)
 
+
 class CalledMethod():
 
     def __init__(self,name):
         self.name = name
         self.calls = list()
+
+    @property
+    def num_calls(self):
+        return len(self.calls) if self.calls else 0
 
     def percentile(self, percent):
         """Compute percentile of values in an array
@@ -312,35 +323,32 @@ class CalledMethod():
         f = math.floor(k)
         c = math.ceil(k)
         if f == c:
-            return self.calls[int(k)]
-        d0 = self.calls[int(f)] * (c-k)
-        d1 = self.calls[int(c)] * (k-f)
-        return int(round(d0+d1))
+            result = self.calls[int(k)]
+        else:
+            d0 = self.calls[int(f)] * (c-k)
+            d1 = self.calls[int(c)] * (k-f)
+            result = int(round(d0+d1))
 
+        return result
+
+    @property
     def stalled(self):
         """
         Return number of stalled calls
         """
-        stalled = [i for i in self.calls if i > munindaemon_settings.STALLED_CALL_THRESHOLD]
-        return len(stalled)
+        return len([i for i in self.calls if i > munindaemon_settings.STALLED_CALL_THRESHOLD])
 
+    @property
     def min(self):
-        if self.calls:
-            return self.calls[0]
-        else:
-            return 0
+        return self.calls[0] if self.calls else 0
 
+    @property
     def max(self):
-        if self.calls:
-            return self.calls[-1]
-        else:
-            return 0
+        return self.calls[-1] if self.calls else 0
 
+    @property
     def avg(self):
-        if not self.calls:
-            return 0
-
-        return sum(self.calls)/len(self.calls)
+        return sum(self.calls)/len(self.calls) if self.calls else 0
 
 
 daemon = MuninDaemon()
