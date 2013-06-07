@@ -15,6 +15,7 @@
 ### END INIT INFO
 
 VIRTUALENV_PATH='/srv/virtualenvs/munin'
+DAEMON_PATH = $VIRTUALENV_PATH/lib/python2.6/site-packages/munindaemon/munindaemon.py
 
 #Activate virtualenv
 source $VIRTUALENV_PATH/bin/activate
@@ -23,16 +24,16 @@ case "$1" in
   start)
     echo "Starting server"
     # Start the daemon
-    python /usr/share/munindaemon/munindaemon.py start
+    python $DAEMON_PATH start
     ;;
   stop)
     echo "Stopping server"
     # Stop the daemon
-    python /usr/share/munindaemon/munindaemon.py stop
+    python $DAEMON_PATH stop
     ;;
   restart)
     echo "Restarting server"
-    python /usr/share/munindaemon/munindaemon.py restart
+    python $DAEMON_PATH restart
     ;;
   *)
     # Refuse to do other stuff
