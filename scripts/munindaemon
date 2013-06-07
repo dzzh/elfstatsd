@@ -15,7 +15,7 @@
 ### END INIT INFO
 
 VIRTUALENV_PATH='/srv/virtualenvs/munin'
-DAEMON_PATH = $VIRTUALENV_PATH/lib/python2.6/site-packages/munindaemon/munindaemon.py
+DAEMON_PATH=$VIRTUALENV_PATH/lib/python2.6/site-packages/munindaemon/munindaemon.py
 
 #Activate virtualenv
 source $VIRTUALENV_PATH/bin/activate
