@@ -32,3 +32,6 @@ MAX_LOG_FILE_SIZE=10000000
 
 #Maximum number of log files to keep
 MAX_LOG_FILES=5
+
+#Maximun number of calls in traceback
+TRACEBACK_LENGTH=5

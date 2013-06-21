@@ -4,6 +4,8 @@
 import ConfigParser
 import logging
 import datetime
+import cStringIO
+import traceback
 import apachelog
 import os
 import re
@@ -38,45 +40,50 @@ class MuninDaemon():
         """Main code of a daemon"""
 
         while True:
-            started = datetime.datetime.now()
-            logger.info('Daemon invoked at ' + str(started))
+            try:
+                started = datetime.datetime.now()
+                logger.info('Daemon invoked at ' + str(started))
 
-            for log_file, dump_file in munindaemon_settings.DATA_FILES:
+                for log_file, dump_file in munindaemon_settings.DATA_FILES:
 
-                #create entries in dictionaries with aggregated data
-                storage_key = dump_file
-                if not storage_key in self.method_stats:
-                    self.method_stats[storage_key] = dict()
-                    self.response_codes_stats[storage_key] = dict()
+                    #create entries in dictionaries with aggregated data
+                    storage_key = dump_file
+                    if not storage_key in self.method_stats:
+                        self.method_stats[storage_key] = dict()
+                        self.response_codes_stats[storage_key] = dict()
 
-                #Generate file names from a template and timestamps
-                file_at_period_start = self.format_filename(log_file,self.period_start)
-                file_at_started = self.format_filename(log_file,started)
+                    #Generate file names from a template and timestamps
+                    file_at_period_start = self.format_filename(log_file,self.period_start)
+                    file_at_started = self.format_filename(log_file,started)
 
-                #File processing. If a file cannot be read, daemon just logs an error and continues execution.
+                    #File processing. If a file cannot be read, daemon just logs an error and continues execution.
 
-                #If the daemon has just started, it does not have seek for the input file and it has to be adjusted to period_start
-                if not file_at_period_start in self.seek.keys():
-                    self.adjust_seek(file_at_period_start)
+                    #If the daemon has just started, it does not have seek for the input file and it has to be adjusted to period_start
+                    if not file_at_period_start in self.seek.keys():
+                        self.adjust_seek(file_at_period_start)
 
-                if file_at_period_start == file_at_started:
-                    #All the records we are interested in are in the same file
-                    self.process_file(storage_key, file_at_started, read_to_time=started)
-                else:
-                    #First read previous file to the end, then current from beginning
-                    self.process_file(storage_key, file_at_period_start)
-                    self.process_file(storage_key, file_at_started, read_from_start=True, read_to_time=started)
+                    if file_at_period_start == file_at_started:
+                        #All the records we are interested in are in the same file
+                        self.process_file(storage_key, file_at_started, read_to_time=started)
+                    else:
+                        #First read previous file to the end, then current from beginning
+                        self.process_file(storage_key, file_at_period_start)
+                        self.process_file(storage_key, file_at_started, read_from_start=True, read_to_time=started)
 
-                self.dump_stats(dump_file)
-                self.cleanup(storage_key)
+                    self.dump_stats(dump_file)
+                    self.cleanup(storage_key)
 
-            self.period_start = started
-            finished = datetime.datetime.now()
-            elapsed_seconds = (finished-started).seconds
-            elapsed_microseconds = (finished-started).microseconds
-            elapsed_microseconds /= 1000000.0
-            if elapsed_seconds < munindaemon_settings.INTERVAL:
-                time.sleep(munindaemon_settings.INTERVAL-elapsed_seconds-elapsed_microseconds)
+                self.period_start = started
+                finished = datetime.datetime.now()
+                elapsed_seconds = (finished-started).seconds
+                elapsed_microseconds = (finished-started).microseconds
+                elapsed_microseconds /= 1000000.0
+                if elapsed_seconds < munindaemon_settings.INTERVAL:
+                    time.sleep(munindaemon_settings.INTERVAL-elapsed_seconds-elapsed_microseconds)
+            except SystemExit:
+                raise
+            except:
+                logger.exception('An error has occurred.')
 
     def parse_line(self,line,log_parser):
         """
@@ -110,7 +117,7 @@ class MuninDaemon():
         except IOError as e:
             logger.error('Could not open file %s' %file)
             logger.error('I/O error({0}): {1}'.format(e.errno, e.strerror))
-            return 1
+            return
 
         log_parser = apachelog.parser(munindaemon_settings.APACHE_LOG_FORMAT)
 
@@ -152,7 +159,7 @@ class MuninDaemon():
         except IOError as e:
             logger.error('Could not open file %s' %file)
             logger.error('I/O error({0}): {1}'.format(e.errno, e.strerror))
-            return 1
+            return
 
         if not read_from_start:
             f.seek(self.seek[file])
@@ -351,10 +358,20 @@ class CalledMethod():
         return sum(self.calls)/len(self.calls) if self.calls else 0
 
 
+class FormatterWithLongerTraceback(logging.Formatter):
+    def formatException(self, ei):
+        sio = cStringIO.StringIO()
+        traceback.print_exception(ei[0], ei[1], ei[2], munindaemon_settings.TRACEBACK_LENGTH, sio)
+        s = sio.getvalue()
+        sio.close()
+        if s[-1:] == "\n":
+            s = s[:-1]
+        return s
+
 daemon = MuninDaemon()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+formatter = FormatterWithLongerTraceback("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 handler = RotatingFileHandler(os.path.join(munindaemon_settings.DAEMON_LOG_DIR, 'munindaemon.log'),
     maxBytes=munindaemon_settings.MAX_LOG_FILE_SIZE, backupCount=munindaemon_settings.MAX_LOG_FILES)
 handler.setFormatter(formatter)
