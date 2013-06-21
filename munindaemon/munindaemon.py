@@ -297,8 +297,8 @@ class LogRecord():
 
     def get_method_name(self):
         """Return cleaned method name from a request string"""
-        split = self.request.split('/')
-        name = split[2] + '_' + split[3].split('?')[0]
+        group, name = self.parse_request()
+        name = group + '_' + name
         valid_name = re.sub(munindaemon_settings.BAD_SYMBOLS,'',name)
         return valid_name
 
@@ -306,6 +306,12 @@ class LogRecord():
         """Determine whether a record is in proper form for processing"""
         return re.search(munindaemon_settings.VALID_REQUEST,self.request)
 
+    def parse_request(self):
+        split = self.request.split('/')
+        split[-1] = split[-1].split('?')[0]
+        group = split[munindaemon_settings.METHOD_GROUP_INDEX]
+        name = split[munindaemon_settings.METHOD_NAME_INDEX]
+        return group, name
 
 class CalledMethod():
 

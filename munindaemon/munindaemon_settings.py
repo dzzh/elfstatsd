@@ -21,6 +21,15 @@ DATA_FILES = [
 #Only the requests matching this regex qualify for further processing
 VALID_REQUEST = re.compile('^/content/')
 
+#After the request is retrieved, it is split by slash symbol and the groupings are put into a list.
+#Specify the proper indices of the list to derive method group location (each group has own chart)
+#and method name location (a line in the chart of the respective group) in the list.
+#
+#Example: for /content/csl/activation request with METHOD_GROUP_INDEX=2, METHOD_NAME_INDEX=3 you will get
+# 'csl' as method group, 'activation' as method name.
+METHOD_GROUP_INDEX = 2
+METHOD_NAME_INDEX = 3
+
 #Symbols to be removed from method names (Munin cannot process them in field names)
 BAD_SYMBOLS = re.compile('[.-]')
 
