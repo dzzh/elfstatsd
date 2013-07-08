@@ -200,8 +200,13 @@ class MuninDaemon():
 
         """
         if record:
-            self.add_call(storage_key,record.get_method_name(),record.latency)
-            self.add_response_code(storage_key,record.response_code)
+            try:
+                self.add_call(storage_key,record.get_method_name(),record.latency)
+                self.add_response_code(storage_key,record.response_code)
+            except RuntimeError:
+                #Thrown by request parser. They also write log. Here we intercept error
+                # and return correctly to continue processing.
+                return
 
     def dump_stats(self, file):
         """Dump statistics to DUMP_FILE in ConfigParser format"""
@@ -304,13 +309,18 @@ class LogRecord():
 
     def is_valid(self):
         """Determine whether a record is in proper form for processing"""
-        return re.search(munindaemon_settings.VALID_REQUEST,self.request)
+        return re.search(munindaemon_settings.VALID_REQUEST, self.request)
 
     def parse_request(self):
-        split = self.request.split('/')
-        split[-1] = split[-1].split('?')[0]
-        group = split[munindaemon_settings.METHOD_GROUP_INDEX]
-        name = split[munindaemon_settings.METHOD_NAME_INDEX]
+        try:
+            split = self.request.split('/')
+            split[-1] = split[-1].split('?')[0]
+            group = split[munindaemon_settings.METHOD_GROUP_INDEX]
+            name = split[munindaemon_settings.METHOD_NAME_INDEX]
+        except IndexError:
+            logger.warning('An error has occurred when trying to parse a request')
+            logger.warning(self.request)
+            raise RuntimeError
         return group, name
 
 class CalledMethod():
