@@ -20,11 +20,13 @@ DATA_FILES = [
 ]
 
 #List of regular expressions to be matched when parsing the request. Each expression should contain
-#'group' and 'method' named groups that will be parsed and displayed in Munin.
+#'method' named group and optionally 'group' named group that will be parsed and displayed in Munin.
 #Example: for /content/csl/activation request that is checked against r'^/content/(?P<group>\w+)/(?P<method>\w+)[/?%&]',
 # you will get 'csl' as group, 'activation' as method name.
+#Methods without group are grouped under 'nogroup' group.
 VALID_REQUESTS = [
     re.compile(r'^/content/(?P<group>\w+)/(?P<method>\w+)[/?%&]?'),
+    re.compile(r'^/content/(?P<method>\w+)[/?%&]?'),
                  ]
 
 #Symbols to be removed from method names (Munin cannot process them in field names)

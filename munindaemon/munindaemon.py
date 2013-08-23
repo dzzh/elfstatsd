@@ -293,10 +293,12 @@ class LogRecord():
 
     def get_method_name(self):
         """Return cleaned method name from a request string"""
-        group, name = self.parse_request()
-        if not group:
+        group, method = self.parse_request()
+        if not group and not method:
             return None
-        name = group + '_' + name
+        elif not group:
+            group = 'nogroup'
+        name = group + '_' + method
         valid_name = re.sub(munindaemon_settings.BAD_SYMBOLS,'',name)
         return valid_name
 
@@ -311,14 +313,19 @@ class LogRecord():
     def parse_request(self):
         match = self.match_against_regexes()
         if match:
-            group = match.group('group')
-            method = match.group('method')
+            try:
+                group = match.group('group')
+            except IndexError:
+                group = None
+            try:
+                method = match.group('method')
+            except IndexError:
+                method = None
             return group, method
         else:
             #Don't log root request ('/')
             if len(self.request) > 1:
-                logger.info('A request was not parsed with any of supplied regular expressions, consider adding one')
-                logger.info('Request: %s:' %self.request)
+                logger.info('Request not parsed and skipped: %s' %self.request)
             return None, None
 
 
