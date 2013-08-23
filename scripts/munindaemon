@@ -11,11 +11,12 @@
 # Default-Start:  3 5
 # Default-Stop:   0 1 2 6
 # Short-Description: TomTom munin plugin daemon process
-# Description:    Runs up the munindaemon process
+# Description:       Runs up the munindaemon process
 ### END INIT INFO
 
 VIRTUALENV_PATH='/srv/virtualenvs/munin'
-DAEMON_PATH=$VIRTUALENV_PATH/lib/python2.6/site-packages/munindaemon/munindaemon.py
+PYTHON_VERSION=$(python -c'import sys; print "%i.%i" %(sys.version_info[0], sys.version_info[1])')
+DAEMON_PATH=$VIRTUALENV_PATH/lib/python$PYTHON_VERSION/site-packages/munindaemon/munindaemon.py
 
 #Activate virtualenv
 source $VIRTUALENV_PATH/bin/activate

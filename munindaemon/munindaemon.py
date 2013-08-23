@@ -21,6 +21,12 @@ import munindaemon_settings
 #3 for milliseconds, 6 for microseconds, etc.
 LATENCY_PRECISION = 3
 
+SEEK_BACKWARD_PERCENTS = 1
+
+MEGABYTE = 1024 * 1024
+
+END_OF_FILE = 'EOF'
+
 class MuninDaemon():
 
     def __init__(self):
@@ -83,7 +89,7 @@ class MuninDaemon():
                 elapsed_microseconds = (finished-started).microseconds
                 elapsed_microseconds /= 1000000.0
                 if elapsed_seconds < munindaemon_settings.INTERVAL:
-                    time.sleep(munindaemon_settings.INTERVAL-elapsed_seconds-elapsed_microseconds)
+                    time.sleep(munindaemon_settings.INTERVAL - elapsed_seconds - elapsed_microseconds)
             except SystemExit:
                 raise
             except:
@@ -125,33 +131,83 @@ class MuninDaemon():
         else:
             return int(round(float(latency), LATENCY_PRECISION) * 10 ** LATENCY_PRECISION)
 
-
-    def set_seek(self, file):
-        """Is needed to correctly set seek value when daemon launches"""
+    def set_seek(self, file_path):
+        """
+        Given a file path, find a position in it where the records for a tracked period start.
+        """
         try:
-            f = open(file, 'r')
+            file = open(file_path, 'r')
         except IOError as e:
-            logger.error('Could not open file %s' %file)
+            logger.error('Could not open file %s' %file_path)
             logger.error('I/O error({0}): {1}'.format(e.errno, e.strerror))
             return
 
         log_parser = apachelog.parser(munindaemon_settings.APACHE_LOG_FORMAT)
+        size = os.stat(file_path).st_size
+        approximate_seek = self.find_approximate_seek_before_period_by_moving_back(file, size, log_parser)
+        exact_seek = self.find_exact_seek_before_period_by_moving_forward(file, log_parser, approximate_seek)
+        self.seek[file_path] = exact_seek
+        file.close()
 
+    def find_approximate_seek_before_period_by_moving_back(self, file, size, log_parser):
+        positions = self.get_seek_positions(size)
+        for position in positions:
+            file.seek(position)
+            file.readline() #setting seek to the beginning of the next line
+            candidate = file.tell()
+            record = self.read_record(file, log_parser)
+            if self.is_record_valid(record) and self.is_record_before_period(record):
+                return candidate
+        return 0
+
+    def get_seek_positions(self, size):
+        current = size - 1
+        result = []
+
+        #No need to jump back for smaller distance as it can be easily covered by forward scan
+        jump_size = int(current / 100.0 * SEEK_BACKWARD_PERCENTS)
+        if not jump_size or jump_size < MEGABYTE:
+            jump_size = MEGABYTE
+
+        while current > 0:
+            current -= jump_size
+            if current > 0:
+                result.append(current)
+            else:
+                return result
+
+    def find_exact_seek_before_period_by_moving_forward(self, file, log_parser, start_position):
+        seek_candidate = start_position
+        file.seek(seek_candidate)
         while True:
-            seek_candidate = f.tell()
-            line = f.readline()
-            if not line:
-                #reached end of file, maybe no new records were added within tracked period
-                # or we have opened a newly created empty file
-                self.seek[file] = seek_candidate
-                break
-            record = self.parse_line(line, log_parser)
-            if record:
-                dt = record.get_time()
-                if dt and dt > self.period_start:
-                    self.seek[file] = seek_candidate
-                    break
-        f.close()
+            seek_candidate = file.tell()
+            record = self.read_record(file, log_parser)
+            if self.is_record_valid(record):
+                if self.is_record_before_period(record):
+                    continue
+                else:
+                    return seek_candidate
+            else:
+                if record == END_OF_FILE:
+                    return file.tell()
+                else:
+                    continue
+
+    def read_record(self, file, log_parser):
+        line = file.readline()
+        if not line:
+            return END_OF_FILE
+        return self.parse_line(line, log_parser)
+
+    def is_record_before_period(self, record):
+        dt = record.get_time()
+        if dt < self.period_start:
+            return True
+        return False
+
+    def is_record_valid(self, record):
+        return True if record and not record == END_OF_FILE and record.get_time() else False
+
 
     def format_filename(self, name, dt):
         """Generate file name from a template containing formatted string and time value"""
