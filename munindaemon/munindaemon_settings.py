@@ -25,9 +25,14 @@ DATA_FILES = [
 # you will get 'csl' as group, 'activation' as method name.
 #Methods without group are grouped under 'nogroup' group.
 VALID_REQUESTS = [
-    re.compile(r'^/content/(?P<group>\w+)/(?P<method>\w+)[/?%&]?'),
-    re.compile(r'^/content/(?P<method>\w+)[/?%&]?'),
+    re.compile(r'^/content/(?P<group>[\w.]+)/(?P<method>\w+)[/?%&]?'),
+    re.compile(r'^/content/(?P<method>[\w.]+)[/?%&]?'),
                  ]
+
+REQUESTS_TO_SKIP = [
+    re.compile(r'^/$'),
+    re.compile(r'^/helloloadbalancer'),
+]
 
 #Symbols to be removed from method names (Munin cannot process them in field names)
 BAD_SYMBOLS = re.compile(r'[.-]')

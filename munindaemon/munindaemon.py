@@ -15,7 +15,11 @@ import bisect
 from daemon import runner
 from types import NoneType
 from logging.handlers import RotatingFileHandler
+from . import __version__ as daemon_version
 import munindaemon_settings
+
+#3 for milliseconds, 6 for microseconds, etc.
+LATENCY_PRECISION = 3
 
 class MuninDaemon():
 
@@ -42,7 +46,7 @@ class MuninDaemon():
         while True:
             try:
                 started = datetime.datetime.now()
-                logger.info('Daemon invoked at ' + str(started))
+                logger.info('Munindaemon version %s invoked at %s' %(daemon_version, str(started)))
 
                 for log_file, dump_file in munindaemon_settings.DATA_FILES:
 
@@ -60,7 +64,7 @@ class MuninDaemon():
 
                     #If the daemon has just started, it does not have seek for the input file and it has to be adjusted to period_start
                     if not file_at_period_start in self.seek.keys():
-                        self.adjust_seek(file_at_period_start)
+                        self.set_seek(file_at_period_start)
 
                     if file_at_period_start == file_at_started:
                         #All the records we are interested in are in the same file
@@ -102,15 +106,28 @@ class MuninDaemon():
             record.request = data['%r'].split(' ')[1]
             record.response_code = int(data['%>s'])
             #Latency rounded to the nearest millisecond
-            record.latency = int(round(int(data['%D'])/1000.0))
+            record.latency = self.parse_latency(data['%D'])
         except apachelog.ApacheLogParserError:
             logger.warn('Parser has caught an error while processing the following record: ')
             logger.warn(line)
             return None
         return record
 
-    def adjust_seek(self, file):
-        """Is needed to correctly set seek value when daemon is launched or file name changes"""
+    def parse_latency(self, latency):
+        """
+        Convert string value of latency to integer with predefined precision.
+        Work with integer and float formats, e.g. '123456' -> 123 and '2.123456789' -> 2123.
+        @param str latency: latency representation from a log file
+        @return int parsed latency
+        """
+        if not '.' in latency:
+            return int(round(int(latency) / float(10 ** (len(latency) - LATENCY_PRECISION))))
+        else:
+            return int(round(float(latency), LATENCY_PRECISION) * 10 ** LATENCY_PRECISION)
+
+
+    def set_seek(self, file):
+        """Is needed to correctly set seek value when daemon launches"""
         try:
             f = open(file, 'r')
         except IOError as e:
@@ -302,16 +319,16 @@ class LogRecord():
         valid_name = re.sub(munindaemon_settings.BAD_SYMBOLS,'',name)
         return valid_name
 
-    def match_against_regexes(self):
+    def match_against_regexes(self, regexes):
         """Determine whether a record is in proper form for processing"""
-        for regex in munindaemon_settings.VALID_REQUESTS:
+        for regex in regexes:
             search = regex.search(self.request)
             if search:
                 return search
         return None
 
     def parse_request(self):
-        match = self.match_against_regexes()
+        match = self.match_against_regexes(munindaemon_settings.VALID_REQUESTS)
         if match:
             try:
                 group = match.group('group')
@@ -323,9 +340,9 @@ class LogRecord():
                 method = None
             return group, method
         else:
-            #Don't log root request ('/')
-            if len(self.request) > 1:
-                logger.info('Request not parsed and skipped: %s' %self.request)
+            match = self.match_against_regexes(munindaemon_settings.REQUESTS_TO_SKIP)
+            if not match:
+                logger.info('Request not parsed: %s' %self.request)
             return None, None
 
 
