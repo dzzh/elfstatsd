@@ -15,7 +15,7 @@ import bisect
 from daemon import runner
 from types import NoneType
 from logging.handlers import RotatingFileHandler
-from . import __version__ as daemon_version
+from __init__ import __version__ as daemon_version
 import munindaemon_settings
 
 #3 for milliseconds, 6 for microseconds, etc.
@@ -121,7 +121,7 @@ class MuninDaemon():
         @return int parsed latency
         """
         if not '.' in latency:
-            return int(round(int(latency) / float(10 ** (len(latency) - LATENCY_PRECISION))))
+            return int(round(int(latency) / float(10 ** LATENCY_PRECISION)))
         else:
             return int(round(float(latency), LATENCY_PRECISION) * 10 ** LATENCY_PRECISION)
 
