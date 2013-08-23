@@ -16,12 +16,12 @@ def get_seek(file_path, period_start):
 
     log_parser = apachelog.parser(settings.APACHE_LOG_FORMAT)
     size = os.stat(file_path).st_size
-    approximate_seek = find_approximate_seek_before_period_by_moving_back(file, size, log_parser, period_start)
-    exact_seek = find_exact_seek_before_period_by_moving_forward(file, log_parser, approximate_seek, period_start)
+    approximate_seek = _find_approximate_seek_before_period_by_moving_back(file, size, log_parser, period_start)
+    exact_seek = _find_exact_seek_before_period_by_moving_forward(file, log_parser, approximate_seek, period_start)
     file.close()
     return exact_seek
 
-def find_approximate_seek_before_period_by_moving_back(file, size, log_parser, period_start):
+def _find_approximate_seek_before_period_by_moving_back(file, size, log_parser, period_start):
     """
     Return a position in a file that is guaranteed to start a record that is earlier than period start or 0.
     @param TextIOWrapper file: file to seek
@@ -29,17 +29,17 @@ def find_approximate_seek_before_period_by_moving_back(file, size, log_parser, p
     @param log_parser: instance of a log parser
     @return long seek
     """
-    positions = get_seek_positions(size)
+    positions = _get_seek_positions(size)
     for position in positions:
         file.seek(position)
         file.readline() #setting seek to the beginning of the next line
         candidate = file.tell()
-        record = read_record(file, log_parser)
-        if is_record_valid(record) and is_record_before_time(record, period_start):
+        record = _read_record(file, log_parser)
+        if _is_record_valid(record) and _is_record_before_time(record, period_start):
             return candidate
     return 0
 
-def get_seek_positions(size):
+def _get_seek_positions(size):
     """
     Return array of suggested positions to seek for a record before start of a tracked period.
 
@@ -61,7 +61,7 @@ def get_seek_positions(size):
         else:
             return result
 
-def find_exact_seek_before_period_by_moving_forward(file, log_parser, start_position, period_start):
+def _find_exact_seek_before_period_by_moving_forward(file, log_parser, start_position, period_start):
     """
     Return position of a first record within tracked period or end of file if no satisfying records are found.
 
@@ -74,9 +74,9 @@ def find_exact_seek_before_period_by_moving_forward(file, log_parser, start_posi
     file.seek(seek_candidate)
     while True:
         seek_candidate = file.tell()
-        record = read_record(file, log_parser)
-        if is_record_valid(record):
-            if is_record_before_time(record, period_start):
+        record = _read_record(file, log_parser)
+        if _is_record_valid(record):
+            if _is_record_before_time(record, period_start):
                 continue
             else:
                 return seek_candidate
@@ -86,17 +86,17 @@ def find_exact_seek_before_period_by_moving_forward(file, log_parser, start_posi
             else:
                 continue
 
-def read_record(file, log_parser):
+def _read_record(file, log_parser):
     line = file.readline()
     if not line:
         return utils.END_OF_FILE
     return utils.parse_line(line, log_parser)
 
-def is_record_before_time(record, time):
+def _is_record_before_time(record, time):
     dt = record.get_time()
     if dt < time:
         return True
     return False
 
-def is_record_valid(record):
+def _is_record_valid(record):
     return True if record and not record == utils.END_OF_FILE and record.get_time() else False

@@ -17,6 +17,7 @@ class LogRecord():
         self.latency = 0
         self.line = ''
 
+    @property
     def get_time(self):
         dt = None
         try:
@@ -26,6 +27,7 @@ class LogRecord():
             logger.warn(self.line)
         return dt
 
+    @property
     def get_method_name(self):
         """Return cleaned method name from a request string"""
         group, method = self.parse_request()
@@ -37,7 +39,7 @@ class LogRecord():
         valid_name = re.sub(settings.BAD_SYMBOLS,'',name)
         return valid_name
 
-    def match_against_regexes(self, regexes):
+    def _match_against_regexes(self, regexes):
         """Determine whether a record is in proper form for processing"""
         for regex in regexes:
             search = regex.search(self.request)
@@ -46,7 +48,7 @@ class LogRecord():
         return None
 
     def parse_request(self):
-        match = self.match_against_regexes(settings.VALID_REQUESTS)
+        match = self._match_against_regexes(settings.VALID_REQUESTS)
         if match:
             try:
                 group = match.group('group')
@@ -58,7 +60,7 @@ class LogRecord():
                 method = None
             return group, method
         else:
-            match = self.match_against_regexes(settings.REQUESTS_TO_SKIP)
+            match = self._match_against_regexes(settings.REQUESTS_TO_SKIP)
             if not match:
                 logger.info('Request not parsed: %s' %self.request)
             return None, None

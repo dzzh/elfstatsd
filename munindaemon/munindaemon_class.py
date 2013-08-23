@@ -40,16 +40,16 @@ class MuninDaemon():
                 logger.info('Munindaemon version %s invoked at %s' % (daemon_version, str(started)))
 
                 for log_file, dump_file in settings.DATA_FILES:
-                    self.process_file(dump_file, log_file, started)
+                    self._process_file(dump_file, log_file, started)
 
                 self.period_start = started
-                self.good_night(started)
+                self._good_night(started)
             except SystemExit:
                 raise
             except:
                 logger.exception('An error has occurred.')
 
-    def good_night(self, started):
+    def _good_night(self, started):
         """Wait until it's time for a new round."""
 
         finished = datetime.datetime.now()
@@ -59,7 +59,7 @@ class MuninDaemon():
         if elapsed_seconds < settings.INTERVAL:
             time.sleep(settings.INTERVAL - int(elapsed_seconds) - float(elapsed_microseconds))
 
-    def process_file(self, dump_file, log_file, started):
+    def _process_file(self, dump_file, log_file, started):
         """
         Read records from log_file starting at started and dump them to dump_file.
 
@@ -84,16 +84,16 @@ class MuninDaemon():
 
         if file_at_period_start == file_at_started:
             #All the records we are interested in are in the same file
-            self.parse_file(dump_file, file_at_started, read_to_time=started)
+            self._parse_file(dump_file, file_at_started, read_to_time=started)
         else:
             #First read previous file to the end, then current from beginning
-            self.parse_file(dump_file, file_at_period_start)
-            self.parse_file(dump_file, file_at_started, read_from_start=True, read_to_time=started)
+            self._parse_file(dump_file, file_at_period_start)
+            self._parse_file(dump_file, file_at_started, read_from_start=True, read_to_time=started)
 
-        self.dump_stats(dump_file)
-        self.cleanup(dump_file)
+        self._dump_stats(dump_file)
+        self._cleanup(dump_file)
 
-    def parse_file(self, storage_key, file, read_from_start=False, read_to_time=None):
+    def _parse_file(self, storage_key, file, read_from_start=False, read_to_time=None):
         """
         Read recent part of the log file, update statistics storages, adjust seek.
         If only file parameter is supplied, reads file from self.seek to the end.
@@ -140,9 +140,9 @@ class MuninDaemon():
                     self.seek[file] = current_seek
                     break
             if record:
-                self.process_record(storage_key, record)
+                self._process_record(storage_key, record)
 
-    def process_record(self, storage_key, record):
+    def _process_record(self, storage_key, record):
         """
         Update statistics storages with values of a current record.
 
@@ -152,10 +152,10 @@ class MuninDaemon():
 
         method_name = record.get_method_name()
         if method_name:
-            self.add_call(storage_key, method_name, record.latency)
-        self.add_response_code(storage_key, record.response_code)
+            self._add_call(storage_key, method_name, record.latency)
+        self._add_response_code(storage_key, record.response_code)
 
-    def dump_stats(self, file):
+    def _dump_stats(self, file):
         """Dump statistics to DUMP_FILE in ConfigParser format."""
 
         storage_key = file
@@ -185,7 +185,7 @@ class MuninDaemon():
         with open(file, 'wb') as f:
             dump.write(f)
 
-    def cleanup(self, storage_key):
+    def _cleanup(self, storage_key):
         """
         Prepare values for the next round.
         Save the method names and existed response codes to keep them in Munin output.
@@ -198,7 +198,7 @@ class MuninDaemon():
         for code in self.response_codes_stats[storage_key]:
             self.response_codes_stats[storage_key][code] = 0
 
-    def get_called_method_stats(self, storage_key, name):
+    def _get_called_method_stats(self, storage_key, name):
         """
         Get a CalledMethod instance from a storage.
         If there is no record, place a new there first.
@@ -214,7 +214,7 @@ class MuninDaemon():
             self.method_stats[storage_key][name] = method
             return method
 
-    def add_call(self, storage_key, name, latency):
+    def _add_call(self, storage_key, name, latency):
         """Add latency of a given call to the storage.
 
         @param str storage_key: a key to define statistics storage
@@ -222,10 +222,10 @@ class MuninDaemon():
         @param int latency: call latency
         """
 
-        method = self.get_called_method_stats(storage_key, name)
+        method = self._get_called_method_stats(storage_key, name)
         bisect.insort(method.calls, latency)
 
-    def add_response_code(self, storage_key, code):
+    def _add_response_code(self, storage_key, code):
         """
         Remember response code in the storage.
 
