@@ -1,3 +1,4 @@
+import logging
 import re
 
 APACHE_LOG_FORMAT = r'%h %l %u %t \"%r\" %>s %B \"%{Referer}i\" \"%{User-Agent}i\" %{JK_LB_FIRST_NAME}n %{JK_LB_LAST_NAME}n %{JK_LB_LAST_STATE}n %I %O %D'
@@ -18,23 +19,19 @@ DATA_FILES = [
     ('/srv/log/httpd/csharing.access.log-%Y-%m-%d-%H', '/tmp/munindaemon-csharing.data'),
 ]
 
-#Only the requests matching this regex qualify for further processing
-VALID_REQUEST = re.compile('^/content/')
-
-#After the request is retrieved, it is split by slash symbol and the groupings are put into a list.
-#Specify the proper indices of the list to derive method group location (each group has own chart)
-#and method name location (a line in the chart of the respective group) in the list.
-#
-#Example: for /content/csl/activation request with METHOD_GROUP_INDEX=2, METHOD_NAME_INDEX=3 you will get
-# 'csl' as method group, 'activation' as method name.
-METHOD_GROUP_INDEX = 2
-METHOD_NAME_INDEX = 3
+#List of regular expressions to be matched when parsing the request. Each expression should contain
+#'group' and 'method' named groups that will be parsed and displayed in Munin.
+#Example: for /content/csl/activation request that is checked against r'^/content/(?P<group>\w+)/(?P<method>\w+)[/?%&]',
+# you will get 'csl' as group, 'activation' as method name.
+VALID_REQUESTS = [
+    re.compile(r'^/content/(?P<group>\w+)/(?P<method>\w+)[/?%&]?'),
+                 ]
 
 #Symbols to be removed from method names (Munin cannot process them in field names)
-BAD_SYMBOLS = re.compile('[.-]')
+BAD_SYMBOLS = re.compile(r'[.-]')
 
 #Response codes to track in all rounds, even if they are not found in logs
-RESPONSE_CODES = [200,404,500]
+RESPONSE_CODES = [200, 404, 500]
 
 #Maximum size of a single log file, in bytes
 MAX_LOG_FILE_SIZE=10000000
@@ -44,3 +41,5 @@ MAX_LOG_FILES=5
 
 #Maximun number of calls in traceback
 TRACEBACK_LENGTH=5
+
+LOGGING_LEVEL = logging.INFO

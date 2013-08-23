@@ -85,7 +85,7 @@ class MuninDaemon():
             except:
                 logger.exception('An error has occurred.')
 
-    def parse_line(self,line,log_parser):
+    def parse_line(self, line, log_parser):
         """
         Convert a line from a log into LogRecord.
 
@@ -93,7 +93,6 @@ class MuninDaemon():
         @param unicode line: log line to parse
         @param ApacheLogParser log_parser: instance of ApacheLogParser containing log format description
         """
-
         record = LogRecord()
 
         try:
@@ -129,7 +128,7 @@ class MuninDaemon():
                 # or we have opened a newly created empty file
                 self.seek[file] = seek_candidate
                 break
-            record = self.parse_line(line,log_parser)
+            record = self.parse_line(line, log_parser)
             if record:
                 dt = record.get_time()
                 if dt and dt > self.period_start:
@@ -187,26 +186,18 @@ class MuninDaemon():
                     #Stop here and leave it for the next invocation.
                     self.seek[file] = current_seek
                     break
-            if record.is_valid():
-                self.process_record(storage_key,record)
-            else:
-                logger.debug('Request not processed: ' + record.request)
+            if record:
+                self.process_record(storage_key, record)
 
-    def process_record(self,storage_key,record):
+    def process_record(self, storage_key, record):
         """Update statistics storages with values of a current record
-
         @param str storage_key: a key to define statistics storage
-        @param LogRecord|None record: record to process
-
+        @param LogRecord record: record to process
         """
-        if record:
-            try:
-                self.add_call(storage_key,record.get_method_name(),record.latency)
-                self.add_response_code(storage_key,record.response_code)
-            except RuntimeError:
-                #Thrown by request parser. They also write log. Here we intercept error
-                # and return correctly to continue processing.
-                return
+        method_name = record.get_method_name()
+        if method_name:
+            self.add_call(storage_key, method_name, record.latency)
+        self.add_response_code(storage_key, record.response_code)
 
     def dump_stats(self, file):
         """Dump statistics to DUMP_FILE in ConfigParser format"""
@@ -303,25 +294,33 @@ class LogRecord():
     def get_method_name(self):
         """Return cleaned method name from a request string"""
         group, name = self.parse_request()
+        if not group:
+            return None
         name = group + '_' + name
         valid_name = re.sub(munindaemon_settings.BAD_SYMBOLS,'',name)
         return valid_name
 
-    def is_valid(self):
+    def match_against_regexes(self):
         """Determine whether a record is in proper form for processing"""
-        return re.search(munindaemon_settings.VALID_REQUEST, self.request)
+        for regex in munindaemon_settings.VALID_REQUESTS:
+            search = regex.search(self.request)
+            if search:
+                return search
+        return None
 
     def parse_request(self):
-        try:
-            split = self.request.split('/')
-            split[-1] = split[-1].split('?')[0]
-            group = split[munindaemon_settings.METHOD_GROUP_INDEX]
-            name = split[munindaemon_settings.METHOD_NAME_INDEX]
-        except IndexError:
-            logger.warning('An error has occurred when trying to parse a request')
-            logger.warning(self.request)
-            raise RuntimeError
-        return group, name
+        match = self.match_against_regexes()
+        if match:
+            group = match.group('group')
+            method = match.group('method')
+            return group, method
+        else:
+            #Don't log root request ('/')
+            if len(self.request) > 1:
+                logger.info('A request was not parsed with any of supplied regular expressions, consider adding one')
+                logger.info('Request: %s:' %self.request)
+            return None, None
+
 
 class CalledMethod():
 
@@ -386,7 +385,7 @@ class FormatterWithLongerTraceback(logging.Formatter):
 
 daemon = MuninDaemon()
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(munindaemon_settings.LOGGING_LEVEL)
 formatter = FormatterWithLongerTraceback("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 handler = RotatingFileHandler(os.path.join(munindaemon_settings.DAEMON_LOG_DIR, 'munindaemon.log'),
     maxBytes=munindaemon_settings.MAX_LOG_FILE_SIZE, backupCount=munindaemon_settings.MAX_LOG_FILES)
