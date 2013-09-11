@@ -17,7 +17,6 @@ class LogRecord():
         self.latency = 0
         self.line = ''
 
-    @property
     def get_time(self):
         dt = None
         try:
@@ -27,7 +26,6 @@ class LogRecord():
             logger.warn(self.line)
         return dt
 
-    @property
     def get_method_name(self):
         """Return cleaned method name from a request string"""
         group, method = self.parse_request()

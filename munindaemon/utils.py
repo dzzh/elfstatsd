@@ -45,7 +45,13 @@ def parse_line(line, log_parser):
         data = log_parser.parse(line)
         record.line = line
         record.time = apachelog.parse_date(data['%t'])
-        record.request = data['%r'].split(' ')[1]
+        request = data['%r']
+        if len(request) > 1:
+            record.request = request.split(' ')[1]
+        else:
+            logger.warn('Parser was not able to parse the request in the following line: ')
+            logger.warn(line)
+            return None
         record.response_code = int(data['%>s'])
         record.latency = parse_latency(data['%D'])
     except apachelog.ApacheLogParserError:
