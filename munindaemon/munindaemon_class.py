@@ -4,10 +4,11 @@ import datetime
 import os
 import time
 import bisect
+import apachelog
 from types import NoneType
 from __init__ import __version__ as daemon_version
 from called_method import CalledMethod
-import apachelog, seek_utils, utils, settings
+import seek_utils, utils, settings
 
 logger = logging.getLogger("munindaemon")
 

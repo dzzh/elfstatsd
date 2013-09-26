@@ -1,6 +1,7 @@
 import logging
 import os
-import apachelog, settings, utils
+import apachelog
+import settings, utils
 
 logger = logging.getLogger("munindaemon")
 

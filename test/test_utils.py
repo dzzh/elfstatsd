@@ -1,6 +1,6 @@
 import datetime
 import pytest
-from munindaemon import apachelog
+import apachelog
 from munindaemon.log_record import LOG_DATETIME_FORMAT
 from munindaemon.utils import parse_latency, MILLISECOND_EXPONENT, MICROSECOND_EXPONENT, SECOND_EXPONENT, NANOSECOND_EXPONENT, parse_line
 
