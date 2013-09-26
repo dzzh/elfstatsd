@@ -45,17 +45,36 @@ class LogRecord():
                 return search
         return None
 
+    def _aggregate_request(self):
+        """Try to match request against aggregation rules in settings
+           and return its group and method if match is found
+        """
+        aggregation_rules = settings.REQUESTS_AGGREGATION
+        for group, method, regex in aggregation_rules:
+            if self._match_against_regexes([regex]):
+                return group, method
+        return None, None
+
     def parse_request(self):
+        """
+        Return group and method of a request contained in the class.
+        Values are derived from URI by matching against VALID_REQUESTS
+        and maybe substituted by REQUESTS_AGGREGATION setting.
+        If a request is not valid and does not match by REQUESTS_TO_SKIP,
+        it is reported in logs as invalid.
+        """
         match = self._match_against_regexes(settings.VALID_REQUESTS)
         if match:
-            try:
-                group = match.group('group')
-            except IndexError:
-                group = None
-            try:
-                method = match.group('method')
-            except IndexError:
-                method = None
+            group, method = self._aggregate_request()
+            if not group and not method:
+                try:
+                    group = match.group('group')
+                except IndexError:
+                    group = None
+                try:
+                    method = match.group('method')
+                except IndexError:
+                    method = None
             return group, method
         else:
             match = self._match_against_regexes(settings.REQUESTS_TO_SKIP)
