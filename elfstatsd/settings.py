@@ -44,7 +44,7 @@ REQUESTS_TO_SKIP = [
 # by VALID_REQUEST regex, are discarded and replaced with this values
 # Records are tuples in form (group, method, regex)
 REQUESTS_AGGREGATION = [
-    ('group', 'method', re.compile(r'')),
+    ('group', 'method', re.compile(r'/just/some/example')),
     ]
 
 # Symbols to be removed from method names (Munin cannot process them in field names)

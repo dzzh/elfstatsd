@@ -70,6 +70,9 @@ class TestLatency():
 
 @pytest.fixture(scope='class')
 def parser():
+    """
+    Instance of an apachelog parser with pre-defined log format.
+    """
     format = r'%h %l %u %t \"%r\" %>s %B \"%{Referer}i\" \"%{User-Agent}i\" %{JK_LB_FIRST_NAME}n %{JK_LB_LAST_NAME}n %{JK_LB_LAST_STATE}n %I %O %D'
     return apachelog.parser(format)
 
