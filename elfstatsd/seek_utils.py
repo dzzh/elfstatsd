@@ -3,7 +3,7 @@ import os
 import apachelog
 import settings, utils
 
-logger = logging.getLogger("munindaemon")
+logger = logging.getLogger("elfstatsd")
 
 def get_seek(file_path, period_start):
     """Given a file path, find a position in it where the records for a tracked period start."""

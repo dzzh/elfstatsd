@@ -1,5 +1,5 @@
-mkdir -p /var/log/munindaemon
-mkdir -p /var/run/munindaemon
+mkdir -p /var/log/elfstatsd
+mkdir -p /var/run/elfstatsd
 
-chmod u+x /etc/init.d/munindaemon
-chkconfig munindaemon on
+chmod u+x /etc/init.d/elfstatsd
+chkconfig elfstatsd on

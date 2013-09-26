@@ -10,7 +10,7 @@
 *.egg-info/
 
 #Generated files
-munindaemon.egg-info/
+elfstatsd.egg-info/
 build/
 dist/
 MANIFEST

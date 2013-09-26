@@ -1,17 +1,17 @@
 #! /bin/bash
 #
-# /etc/init.d/munindaemon
+# /etc/init.d/elfstatsd
 #
 ### BEGIN INIT INFO
-# Provides: munindaemon
+# Provides: elfstatsd
 # Required-Start:
 # Should-Start:
 # Required-Stop:
 # Should-Stop:
 # Default-Start:  3 5
 # Default-Stop:   0 1 2 6
-# Short-Description: TomTom munin plugin daemon process
-# Description:       Runs up the munindaemon process
+# Short-Description: elfstatsd daemon to aggregate http stats in ELF format for Munin
+# Description:       Runs up the elfstatsd process
 ### END INIT INFO
 
 VIRTUALENV_PATH='/srv/virtualenvs/munin'
@@ -20,7 +20,7 @@ VIRTUALENV_PATH='/srv/virtualenvs/munin'
 source $VIRTUALENV_PATH/bin/activate
 
 PYTHON_VERSION=$(python -c'import sys; print "%i.%i" %(sys.version_info[0], sys.version_info[1])')
-DAEMON_PATH=$VIRTUALENV_PATH/lib/python$PYTHON_VERSION/site-packages/munindaemon/munindaemon.py
+DAEMON_PATH=$VIRTUALENV_PATH/lib/python$PYTHON_VERSION/site-packages/elfstatsd/elfstatsd.py
 
 case "$1" in
   start)
@@ -39,7 +39,7 @@ case "$1" in
     ;;
   *)
     # Refuse to do other stuff
-    echo "Usage: /etc/init.d/munindaemon.sh {start|stop|restart}"
+    echo "Usage: /etc/init.d/elfstatsd.sh {start|stop|restart}"
     exit 1
     ;;
 esac

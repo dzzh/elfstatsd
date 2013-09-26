@@ -13,7 +13,7 @@ BYTES_IN_MB = 1024 * 1024
 
 END_OF_FILE = 'EOF'
 
-logger = logging.getLogger("munindaemon")
+logger = logging.getLogger("elfstatsd")
 
 def parse_latency(latency, precision = MILLISECOND_EXPONENT):
     """

@@ -1,5 +1,5 @@
 if [ "$1" = 0  ]; then
-/sbin/service munindaemon stop
-rm -rf /var/log/munindaemon
-rm -rf /var/run/munindaemon
+/sbin/service elfstatsd stop
+rm -rf /var/log/elfstatsd
+rm -rf /var/run/elfstatsd
 fi

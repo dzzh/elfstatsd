@@ -7,7 +7,7 @@ import traceback
 import os
 from daemon import runner
 from logging.handlers import RotatingFileHandler
-from munindaemon_class import MuninDaemon
+from elfstatsd_class import ElfStatsDaemon
 import settings
 
 class FormatterWithLongerTraceback(logging.Formatter):
@@ -20,11 +20,11 @@ class FormatterWithLongerTraceback(logging.Formatter):
             s = s[:-1]
         return s
 
-daemon = MuninDaemon()
-logger = logging.getLogger("munindaemon")
+daemon = ElfStatsDaemon()
+logger = logging.getLogger("elfstatsd")
 logger.setLevel(settings.LOGGING_LEVEL)
 formatter = FormatterWithLongerTraceback("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-handler = RotatingFileHandler(os.path.join(settings.DAEMON_LOG_DIR, 'munindaemon.log'),
+handler = RotatingFileHandler(os.path.join(settings.DAEMON_LOG_DIR, 'elfstatsd.log'),
     maxBytes=settings.MAX_LOG_FILE_SIZE, backupCount=settings.MAX_LOG_FILES)
 handler.setFormatter(formatter)
 logger.addHandler(handler)

@@ -5,7 +5,7 @@ import settings
 
 LOG_DATETIME_FORMAT = '%Y%m%d%H%M%S'
 
-logger = logging.getLogger("munindaemon")
+logger = logging.getLogger("elfstatsd")
 
 class LogRecord():
 

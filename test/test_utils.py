@@ -1,8 +1,8 @@
 import datetime
 import pytest
 import apachelog
-from munindaemon.log_record import LOG_DATETIME_FORMAT
-from munindaemon.utils import parse_latency, MILLISECOND_EXPONENT, MICROSECOND_EXPONENT, SECOND_EXPONENT, NANOSECOND_EXPONENT, parse_line
+from elfstatsd.log_record import LOG_DATETIME_FORMAT
+from elfstatsd.utils import parse_latency, MILLISECOND_EXPONENT, MICROSECOND_EXPONENT, SECOND_EXPONENT, NANOSECOND_EXPONENT, parse_line
 
 class TestLatency():
     def test_int_0(self):

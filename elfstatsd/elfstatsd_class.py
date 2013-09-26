@@ -10,15 +10,15 @@ from __init__ import __version__ as daemon_version
 from called_method import CalledMethod
 import seek_utils, utils, settings
 
-logger = logging.getLogger("munindaemon")
+logger = logging.getLogger("elfstatsd")
 
-class MuninDaemon():
+class ElfStatsDaemon():
 
     def __init__(self):
         self.stdin_path = '/dev/null'
         self.stdout_path = '/dev/null'
         self.stderr_path = '/dev/null'
-        self.pidfile_path = os.path.join(settings.DAEMON_PID_DIR, 'munindaemon.pid')
+        self.pidfile_path = os.path.join(settings.DAEMON_PID_DIR, 'elfstatsd.pid')
         self.pidfile_timeout = 5
 
         #Beginning of the analysis period
@@ -38,7 +38,7 @@ class MuninDaemon():
             #noinspection PyBroadException
             try:
                 started = datetime.datetime.now()
-                logger.info('Munindaemon version %s invoked at %s' % (daemon_version, str(started)))
+                logger.info('elfstatsd v%s invoked at %s' % (daemon_version, str(started)))
 
                 for log_file, dump_file in settings.DATA_FILES:
                     self._process_file(dump_file, log_file, started)

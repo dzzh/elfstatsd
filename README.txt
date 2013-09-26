@@ -1,5 +1,5 @@
-http://vos.intra.local/display/SS3/Monitoring+Apache+performance+at+Community+servers+with+Munin
+elfstatsd
 
 Running unit tests:
 
-Install pytest with `pip install pytest` and invoke `py.test` from munindaemon directory.
+Install pytest with `pip install pytest` and invoke `py.test` from elfstatsd directory.
