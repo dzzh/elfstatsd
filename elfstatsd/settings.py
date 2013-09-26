@@ -10,7 +10,7 @@ DAEMON_LOG_DIR = '/var/log/elfstatsd'
 # Time interval in seconds between two daemon invocations
 INTERVAL = 300
 
-# Value in milliseconds to consider a call stalled and report it additionally
+# If latency in milliseconds exceeds this value, a call is considered stalled and is reported in an additional metric.
 STALLED_CALL_THRESHOLD = 4000
 
 # A list of tuples containing input and output data files
