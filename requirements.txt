@@ -1,0 +1,3 @@
+apachelog>=1.1
+lockfile>=0.9.1
+python-daemon>=1.6
