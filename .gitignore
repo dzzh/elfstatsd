@@ -1,3 +1,14 @@
+#OS X garbage
+.DS_Store
+
+#IDE config
+.idea/
+*.iml
+
+#Compiled code
+*.pyc
+*.egg-info/
+
 #Generated files
 munindaemon.egg-info/
 build/
