@@ -2,7 +2,29 @@
 
 A daemon process to aggregate statistics from access logs of different HTTP servers (Apache, Tomcat, Nginx, etc.) for visualizing these data later with [Munin](http://munin-monitoring.org) or similar tools. Elfstatsd parses logs in Extended Log Format (ELF) and reports such metrics as total number of calls, number of calls per method, aggregated latencies and response codes. Has a large number of settings that make it a flexible solution for monitoring web servers configured in many different ways.
 
+Daemon code is written at Python programming language and requires Python 2.6 or 2.7 to run. Migration to Python 3 and addition of Python 2.4+ support are in plans.
+
 ## Test, build and run
+
+### Building the code from sources
+
+This code was originally written for Linux RHEL 6 and contains scripts to build RPMs for this OS. Packaging scripts for other Linux flavors are not yet implemented. Let me know if you are interested in having a package for your Linux version.
+
+#### Installation from source codes
+
+It is recommended to setup [a virtual environment](http://www.virtualenv.org) to run this daemon. Procedures to install daemon code with and without this environment will be described later.
+
+#### Building and insalling RPM for RHEL 6
+
+* `cd elfstatsd`
+
+* If you plan to run `elfstatsd` from a virtual environment, switch to it: `source /path/to/virtualenv/bin/activate`
+
+* Build rpm: `python setup.py bdist_rpm`
+
+* Install rpm: `rpm -Uvh dist/elfstatsd-XX.XX.rpm`
+
+
 
 ### Running unit tests:
 
