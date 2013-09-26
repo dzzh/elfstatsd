@@ -84,7 +84,13 @@ class MuninDaemon():
 
         if file_at_period_start == file_at_started:
             #All the records we are interested in are in the same file
-            self._parse_file(dump_file, file_at_started, read_to_time=started)
+            file_size = os.stat(file_at_started).st_size
+
+            #Processing the situation when the log was rotated in-place between daemon executions.
+            #In this situation we start reading file from start.
+            read_from_start = True if file_size < self.seek[file_at_started] else False
+
+            self._parse_file(dump_file, file_at_started, read_from_start=read_from_start, read_to_time=started)
         else:
             #First read previous file to the end, then current from beginning
             self._parse_file(dump_file, file_at_period_start)
