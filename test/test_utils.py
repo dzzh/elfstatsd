@@ -1,8 +1,18 @@
 import datetime
+from elfstatsd import log_record, settings
 import pytest
 import apachelog
-from elfstatsd.log_record import LOG_DATETIME_FORMAT
-from elfstatsd.utils import parse_latency, MILLISECOND_EXPONENT, MICROSECOND_EXPONENT, SECOND_EXPONENT, NANOSECOND_EXPONENT, parse_line
+from elfstatsd.utils import parse_latency, MILLISECOND_EXPONENT, MICROSECOND_EXPONENT, SECOND_EXPONENT, NANOSECOND_EXPONENT, parse_line, format_value_for_munin, format_filename
+
+@pytest.fixture(scope='function')
+def utils_setup(monkeypatch):
+    """
+    Monkeypatch settings setup for utils module.
+    """
+    monkeypatch.setattr(log_record, 'APACHELOG_DATETIME_FORMAT', '%Y%m%d%H%M%S')
+    monkeypatch.setattr(settings, 'ELF_FORMAT', r'%h %l %u %t \"%r\" %>s %B \"%{Referer}i\" \"%{User-Agent}i\" %{JK_LB_FIRST_NAME}n %{JK_LB_LAST_NAME}n %{JK_LB_LAST_STATE}n %I %O %D')
+    return monkeypatch
+
 
 class TestLatency():
     def test_int_0(self):
@@ -68,24 +78,85 @@ class TestLatency():
     def test_float_3(self):
         assert parse_latency('0.54478', MILLISECOND_EXPONENT) == 545
 
-@pytest.fixture(scope='class')
-def parser():
-    """
-    Instance of an apachelog parser with pre-defined log format.
-    """
-    format = r'%h %l %u %t \"%r\" %>s %B \"%{Referer}i\" \"%{User-Agent}i\" %{JK_LB_FIRST_NAME}n %{JK_LB_LAST_NAME}n %{JK_LB_LAST_STATE}n %I %O %D'
-    return apachelog.parser(format)
 
-@pytest.mark.usefixtures("parser")
+@pytest.mark.usefixtures("utils_setup")
 class TestParseLine():
 
-    def test_1(self):
+    def test_valid(self, monkeypatch):
+        utils_setup(monkeypatch)
+
         line = u'172.19.0.40 - - [08/Aug/2013:10:59:59 +0200] "POST /content/csl/contentupdate/xxx HTTP/1.1" 200 8563 "-" ' \
                u'"Apache-HttpClient/4.2.1 (java 1.5)" community1 community1 OK 14987 8785 53047'
-        record = parse_line(line, parser())
+        parser = apachelog.parser(settings.ELF_FORMAT)
+        record = parse_line(line, parser)
 
         assert record.request == '/content/csl/contentupdate/xxx'
-        assert record.get_time() == datetime.datetime.strptime('20130808105959', LOG_DATETIME_FORMAT)
+        assert record.get_time() == datetime.datetime.strptime('20130808105959', log_record.APACHELOG_DATETIME_FORMAT)
         assert record.response_code == 200
         assert record.latency == 53
         assert record.get_method_name() == 'csl_contentupdate'
+
+    def test_empty(self, monkeypatch):
+        utils_setup(monkeypatch)
+
+        line = u''
+        parser = apachelog.parser(settings.ELF_FORMAT)
+        record = parse_line(line, parser)
+
+        assert record is None
+
+    def test_empty_request(self, monkeypatch):
+        utils_setup(monkeypatch)
+
+        line = u'172.19.0.40 - - [08/Aug/2013:10:59:59 +0200] "" 200 8563 "-" '\
+               u'"Apache-HttpClient/4.2.1 (java 1.5)" community1 community1 OK 14987 8785 53047'
+        parser = apachelog.parser(settings.ELF_FORMAT)
+        record = parse_line(line, parser)
+
+        assert record is None
+
+    def test_with_latency_in_milliseconds(self, monkeypatch):
+        utils_setup(monkeypatch)
+
+        line = u'172.19.0.40 - - [08/Aug/2013:10:59:59 +0200] "POST /content/csl/contentupdate/xxx HTTP/1.1" 200 8563 "-" '\
+               u'"Apache-HttpClient/4.2.1 (java 1.5)" community1 community1 OK 14987 8785 1253'
+        parser = apachelog.parser(settings.ELF_FORMAT)
+        record = parse_line(line, parser, True)
+
+        assert record.latency == 1253
+
+    def test_with_latency_in_microseconds(self, monkeypatch):
+        utils_setup(monkeypatch)
+
+        line = u'172.19.0.40 - - [08/Aug/2013:10:59:59 +0200] "POST /content/csl/contentupdate/xxx HTTP/1.1" 200 8563 "-" '\
+               u'"Apache-HttpClient/4.2.1 (java 1.5)" community1 community1 OK 14987 8785 1253'
+        parser = apachelog.parser(settings.ELF_FORMAT)
+        record = parse_line(line, parser, False)
+
+        assert record.latency == 1
+
+
+class TestFormatEmptyValue():
+
+    def test_format_valid(self):
+        assert format_value_for_munin(17) == 17
+
+    def test_zero_allowed(self):
+        assert format_value_for_munin(0, True) == 0
+
+    def test_zero_not_allowed(self):
+        assert format_value_for_munin(0, False) == 'U'
+
+    def test_none(self):
+        assert format_value_for_munin(None) == 'U'
+
+
+class TestFormatFilename():
+
+    def test_format_filename_no_template(self):
+        dt = datetime.datetime.now()
+        assert format_filename('file.log', dt) == 'file.log'
+
+    def test_format_filename_with_template(self):
+        dt = datetime.datetime.now()
+        assert format_filename('file.log', dt) == 'file.log'

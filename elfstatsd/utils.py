@@ -56,7 +56,7 @@ def parse_line(line, log_parser, latency_in_millis=False):
             return None
         record.response_code = int(data['%>s'])
         latency = data['%D']
-        if '.' not in latency and latency_in_millis:
+        if latency.find('.') == -1 and latency_in_millis:
             latency += '000'
         record.latency = parse_latency(latency)
     except apachelog.ApacheLogParserError:

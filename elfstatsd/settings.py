@@ -26,7 +26,7 @@ DATA_FILES = [
 # Methods without group are put into 'nogroup' group.
 # As soon as first match is found, matching process stops.
 VALID_REQUESTS = [
-    re.compile(r'^/content/(?P<group>[\w.]+)/(?P<method>\w+)[/?%&]?'),
+    re.compile(r'^/content/(?P<group>[\w.]+)/(?P<method>[\w.]+)[/?%&]?'),
     re.compile(r'^/content/(?P<method>[\w.]+)[/?%&]?'),
     ]
 
@@ -48,7 +48,7 @@ REQUESTS_AGGREGATION = [
     ]
 
 # Symbols to be removed from method names (Munin cannot process them in field names)
-BAD_SYMBOLS = re.compile(r'[.-]')
+FORBIDDEN_SYMBOLS = re.compile(r'[.-]')
 
 # Response codes to track in all rounds, even if they are not found in logs
 RESPONSE_CODES = [200, 404, 500]

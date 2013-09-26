@@ -3,7 +3,7 @@ import logging
 import re
 import settings
 
-LOG_DATETIME_FORMAT = '%Y%m%d%H%M%S'
+APACHELOG_DATETIME_FORMAT = '%Y%m%d%H%M%S'
 
 logger = logging.getLogger("elfstatsd")
 
@@ -20,21 +20,22 @@ class LogRecord():
     def get_time(self):
         dt = None
         try:
-            dt = datetime.datetime.strptime(self.time[0], LOG_DATETIME_FORMAT)
+            dt = datetime.datetime.strptime(self.time[0], APACHELOG_DATETIME_FORMAT)
         except ValueError:
-            logger.warn('Could not parse time string "%s" for the following log record:' % self.time)
+            logger.warn('Could not parse time string "%s" for the following log record:' % str(self.time))
             logger.warn(self.line)
         return dt
 
     def get_method_name(self):
         """Return cleaned method name from a request string"""
-        group, method = self.parse_request()
+        group, method = self._parse_request()
         if not group and not method:
             return None
         elif not group:
             group = 'nogroup'
         name = group + '_' + method
-        valid_name = re.sub(settings.BAD_SYMBOLS,'',name)
+        print name
+        valid_name = re.sub(settings.FORBIDDEN_SYMBOLS, '', name)
         return valid_name
 
     def _match_against_regexes(self, regexes):
@@ -55,7 +56,7 @@ class LogRecord():
                 return group, method
         return None, None
 
-    def parse_request(self):
+    def _parse_request(self):
         """
         Return group and method of a request contained in the class.
         Values are derived from URI by matching against VALID_REQUESTS
