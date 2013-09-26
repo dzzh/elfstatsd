@@ -132,7 +132,7 @@ class ElfStatsDaemon():
                 #Reached end of file, record seek and stop
                 self.seek[file] = current_seek
                 break
-            record = utils.parse_line(line, log_parser)
+            record = utils.parse_line(line, log_parser, settings.LATENCY_IN_MILLISECONDS)
             if not record:
                 continue
             if read_to_time:

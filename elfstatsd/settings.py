@@ -53,6 +53,15 @@ BAD_SYMBOLS = re.compile(r'[.-]')
 # Response codes to track in all rounds, even if they are not found in logs
 RESPONSE_CODES = [200, 404, 500]
 
+# Apache and most other servers write logs with latencies in microseconds (10^-6).
+# Tomcat, however, works with milliseconds (10^-3). This setting specifies what latency
+# resolution is used. If set to False, microseconds are assumed, otherwise milliseconds.
+LATENCY_IN_MILLISECONDS = False
+
+#
+# Settings for internal logging
+#
+
 # Maximum size of a single log file, in bytes
 MAX_LOG_FILE_SIZE=10000000
 

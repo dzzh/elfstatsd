@@ -17,11 +17,12 @@ logger = logging.getLogger("elfstatsd")
 
 def parse_latency(latency, precision = MILLISECOND_EXPONENT):
     """
-    Parse string value of latency to integer with predefined precision.
+    Parse string value of latency to integer with predefined precision of returned result.
     Convert from int value in microseconds and from float value in nanoseconds
     (e.g. '123456' -> 123, '4135' -> 4 and '2.123456789' -> 2123).
     For other formats, correctness of the results is not guaranteed.
     @param str latency: latency representation from a log file
+    @param int precision: precision of returned result
     @return int parsed latency
     """
     if not '.' in latency:
@@ -31,13 +32,14 @@ def parse_latency(latency, precision = MILLISECOND_EXPONENT):
         #float in nanoseconds
         return int(round(float(latency), precision) * 10 ** precision)
 
-def parse_line(line, log_parser):
+def parse_line(line, log_parser, latency_in_millis=False):
     """
     Convert a line from a log into LogRecord.
 
     Contains code that parses log records. This code may need to be changed if Apache log format changes.
     @param unicode line: log line to parse
     @param ApacheLogParser log_parser: instance of ApacheLogParser containing log format description
+    @param boolean latency_in_millis: if True, latency is considered to be in milliseconds, otherwise in microseconds
     """
     record = log_record.LogRecord()
 
@@ -53,7 +55,10 @@ def parse_line(line, log_parser):
             logger.warn(line)
             return None
         record.response_code = int(data['%>s'])
-        record.latency = parse_latency(data['%D'])
+        latency = data['%D']
+        if '.' not in latency and latency_in_millis:
+            latency += '000'
+        record.latency = parse_latency(latency)
     except apachelog.ApacheLogParserError:
         logger.warn('Parser has caught an error while processing the following record: ')
         logger.warn(line)
