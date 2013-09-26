@@ -1,7 +1,7 @@
 import logging
 import re
 
-APACHE_LOG_FORMAT = r'%h %l %u %t \"%r\" %>s %B \"%{Referer}i\" \"%{User-Agent}i\" %{JK_LB_FIRST_NAME}n %{JK_LB_LAST_NAME}n %{JK_LB_LAST_STATE}n %I %O %D'
+ELF_FORMAT = r'%h %l %u %t \"%r\" %>s %B \"%{Referer}i\" \"%{User-Agent}i\" %{JK_LB_FIRST_NAME}n %{JK_LB_LAST_NAME}n %{JK_LB_LAST_STATE}n %I %O %D'
 
 DAEMON_DIR = '/usr/share/elfstatsd'
 DAEMON_PID_DIR = '/var/run/elfstatsd'
@@ -15,14 +15,14 @@ STALLED_CALL_THRESHOLD = 4000
 
 # A list of tuples containing input and output data files
 DATA_FILES = [
-    ('/srv/log/httpd/community.access.log-%Y-%m-%d-%H', '/tmp/elfstatsd-community.data'),
-    ('/srv/log/httpd/csharing.access.log-%Y-%m-%d-%H', '/tmp/elfstatsd-csharing.data'),
+    ('/srv/log/httpd/apache.access.log-%Y-%m-%d-%H', '/tmp/elfstatsd-apache.data'),
+    ('/srv/log/httpd/tomcat.access.log-%Y-%m-%d-%H', '/tmp/elfstatsd-tomcat.data'),
     ]
 
 # List of regular expressions to be matched when parsing the request. Each expression should contain
 # 'method' named group and optionally 'group' named group that will be parsed and displayed in Munin.
-# Example: for /content/csl/activation request that is checked against r'^/content/(?P<group>\w+)/(?P<method>\w+)[/?%&]',
-# you will get 'csl' as group, 'activation' as method name.
+# Example: for '/content/service/call' request that is checked against r'^/content/(?P<group>\w+)/(?P<method>\w+)[/?%&]',
+# you will get 'service' as group, 'call' as method name.
 # Methods without group are put into 'nogroup' group.
 # As soon as first match is found, matching process stops.
 VALID_REQUESTS = [
@@ -35,7 +35,7 @@ VALID_REQUESTS = [
 # valid after getting through VALID_REQUESTS, it is never checked against this list.
 REQUESTS_TO_SKIP = [
     re.compile(r'^/$'),
-    re.compile(r'^/helloloadbalancer'),
+    re.compile(r'^/skip'),
     ]
 
 # Additional aggregation for valid requests for more flexibility.
@@ -44,7 +44,7 @@ REQUESTS_TO_SKIP = [
 # by VALID_REQUEST regex, are discarded and replaced with this values
 # Records are tuples in form (group, method, regex)
 REQUESTS_AGGREGATION = [
-    ('group', 'method', re.compile(r'/just/some/example')),
+    ('group', 'method', re.compile(r'/service/call/to/aggregate')),
     ]
 
 # Symbols to be removed from method names (Munin cannot process them in field names)

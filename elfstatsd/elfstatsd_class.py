@@ -123,7 +123,7 @@ class ElfStatsDaemon():
         if not read_from_start:
             f.seek(self.seek[file])
 
-        log_parser = apachelog.parser(settings.APACHE_LOG_FORMAT)
+        log_parser = apachelog.parser(settings.ELF_FORMAT)
 
         while True:
             current_seek = f.tell()
@@ -183,7 +183,7 @@ class ElfStatsDaemon():
         dump.add_section(section)
         for code, value in self.response_codes_stats[storage_key].iteritems():
             dump.set(section, str(code), utils.format_value_for_munin(value))
-            #Add response codes from settings with 0 value if they are not met in logs
+        #Add response codes from settings with 0 value if they are not met in logs
         #Is needed for Munin not to drop these codes from the charts
         for code in settings.RESPONSE_CODES:
             if not code in self.response_codes_stats[storage_key].keys():

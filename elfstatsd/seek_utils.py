@@ -15,7 +15,7 @@ def get_seek(file_path, period_start):
         logger.error('I/O error({0}): {1}'.format(e.errno, e.strerror))
         return
 
-    log_parser = apachelog.parser(settings.APACHE_LOG_FORMAT)
+    log_parser = apachelog.parser(settings.ELF_FORMAT)
     size = os.stat(file_path).st_size
     approximate_seek = _find_approximate_seek_before_period_by_moving_back(file, size, log_parser, period_start)
     exact_seek = _find_exact_seek_before_period_by_moving_forward(file, log_parser, approximate_seek, period_start)

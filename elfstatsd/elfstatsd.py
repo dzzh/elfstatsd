@@ -1,5 +1,6 @@
-"""A daemon parsing Apache access logs and dumping aggregated results to the files.
-   These dump files can later be used by Munin or other clients to monitor server behavior in near-real-time.
+"""
+A daemon parsing Apache access logs and dumping aggregated results to the specified files.
+These dump files can later be used by Munin or other clients to monitor server behavior in near-real-time.
 """
 import logging
 import cStringIO
