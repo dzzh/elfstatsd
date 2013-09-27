@@ -47,7 +47,7 @@ To show data aggregated with `elfstatsd` in Munin, a set of plugins parsing aggr
 
 `elfstatsd` is available under the terms of MIT License.
 
-Copyright © 2013 [Źmicier Žaleźničenka][me]
+Copyright © 2013 [Źmicier Žaleźničenka][me] & Andriy Yakovlev
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
