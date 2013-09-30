@@ -93,7 +93,9 @@ If you face problems with the daemon, start troubleshooting with inspecting its 
 
 `elfstatsd` is available under the terms of MIT License.
 
-Copyright © 2013 [Źmicier Žaleźničenka][me] & Andriy Yakovlev
+Copyright © 2013 [Źmicier Žaleźničenka][me] & Andriy Yakovlev.
+
+Developed at [TomTom](http://tomtom.com). Inspired by [Oleg Sigida](http://linkedin.com/in/olegsigida/).
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

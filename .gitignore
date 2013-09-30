@@ -10,9 +10,7 @@
 *.egg-info/
 
 #Generated files
-elfstatsd.egg-info/
 build/
 dist/
 MANIFEST
 coverage.xml
-.coverage
