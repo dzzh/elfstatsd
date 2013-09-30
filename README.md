@@ -67,7 +67,7 @@ All of these paths can be re-declared in `settings.py`. Make sure that a user la
 
 ### Running unit tests:
 
-Elfstatsd uses `py.test` as its testing framework. It is not defined as requirement for a project and you don't need in it to build the daemon code. However, in case you want to make changes to the code and run the available tests, install `py.test` with `pip install pytest` and run `py.test` from `elfstatsd` directory.
+`elfstatsd` uses `py.test` as its testing framework. It is not defined as requirement for a project and you don't need in it to build and run the daemon. However, in case you want to make changes to the code and run the available tests, you can execute `python setup.py test`. If `py.test` is not installed at your machine, it will be downloaded automatically.
 
 
 ## Configuration
