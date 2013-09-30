@@ -10,8 +10,8 @@ setup(
     url='https://github.com/dzzh/elfstatsd',
     packages=['elfstatsd'],
     requires=['daemon(>=1.6)','lockfile(>=0.9)','apachelog(>=1.1)'],
+    provides=['elfstatsd'],
     platforms=['Linux'],
-    scripts = ['elfstatsd/elfstatsd.py'],
     data_files = [
         ('/etc/init.d', ['scripts/elfstatsd']),
     ]

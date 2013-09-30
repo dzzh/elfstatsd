@@ -14,13 +14,22 @@
 # Description:       Runs up the elfstatsd process
 ### END INIT INFO
 
-VIRTUALENV_PATH='/srv/virtualenvs/munin'
-
-#Activate virtualenv
-source $VIRTUALENV_PATH/bin/activate
-
-PYTHON_VERSION=$(python -c'import sys; print "%i.%i" %(sys.version_info[0], sys.version_info[1])')
-DAEMON_PATH=$VIRTUALENV_PATH/lib/python$PYTHON_VERSION/site-packages/elfstatsd/elfstatsd.py
+if [ -z "${ELFSTATSD_VIRTUALENV_PATH+x}" ]
+    then
+        #Virtual environment variable not set, use standard PYTHON_PATH
+        if [ -z "${PYTHONPATH+x}" ]
+            then
+                echo "Neither ELFSTATSD_VIRTUALENV_PATH nor PYTHONPATH are set, elfstatsd quits"
+                exit 1
+            else
+                DAEMON_PATH=$PYTHONPATH/elfstatsd/elfstatsd.py
+        fi
+    else
+        #Virtual environment variable set, activate environment and use it
+        source $ELFSTATSD_VIRTUALENV_PATH/bin/activate
+        PYTHON_VERSION=$(python -c'import sys; print "%i.%i" %(sys.version_info[0], sys.version_info[1])')
+        DAEMON_PATH=$ELFSTATSD_VIRTUALENV_PATH/lib/python$PYTHON_VERSION/site-packages/elfstatsd/elfstatsd.py
+fi
 
 case "$1" in
   start)
@@ -39,7 +48,7 @@ case "$1" in
     ;;
   *)
     # Refuse to do other stuff
-    echo "Usage: /etc/init.d/elfstatsd.sh {start|stop|restart}"
+    echo "Usage: /etc/init.d/elfstatsd {start|stop|restart}"
     exit 1
     ;;
 esac

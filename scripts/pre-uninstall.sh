@@ -1,3 +1,4 @@
+#!/bin/sh
 if [ "$1" = 0  ]; then
 /sbin/service elfstatsd stop
 rm -rf /var/log/elfstatsd

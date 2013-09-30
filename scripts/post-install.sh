@@ -1,3 +1,4 @@
+#!/bin/sh
 mkdir -p /var/log/elfstatsd
 mkdir -p /var/run/elfstatsd
 
