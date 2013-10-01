@@ -45,24 +45,40 @@ def parse_line(line, log_parser, latency_in_millis=False):
 
     try:
         data = log_parser.parse(line)
-        record.line = line
-        record.time = apachelog.parse_date(data['%t'])
-        request = data['%r']
-        if len(request) > 1:
-            record.request = request.split(' ')[1]
-        else:
-            logger.warn('Parser was not able to parse the request in the following line: ')
-            logger.warn(line)
-            return None
-        record.response_code = int(data['%>s'])
-        latency = data['%D']
-        if latency.find('.') == -1 and latency_in_millis:
-            latency += '000'
-        record.latency = parse_latency(latency)
     except apachelog.ApacheLogParserError:
         logger.warn('Parser has caught an error while processing the following record: ')
         logger.warn(line)
         return None
+
+    try:
+        record.time = apachelog.parse_date(data['%t'])
+    except (IndexError, KeyError):
+        logger.warn('Parser was not able to parse date %s: ' %data['%t'])
+        logger.warn('Record with error: %s' %line)
+        return None
+
+    record.line = line
+
+    request = data['%r']
+    if len(request) > 1:
+        record.request = request.split(' ')[1]
+    else:
+        logger.warn('Parser was not able to parse the request %s: ' %request)
+        logger.warn('Record with error: %s' %line)
+        return None
+
+    try:
+        record.response_code = int(data['%>s'])
+    except ValueError:
+        logger.warn('Parser was not able to parse response code %s: ' %data['%>s'])
+        logger.warn('Record with error: %s' %line)
+        return None
+
+    latency = data['%D']
+    if latency.find('.') == -1 and latency_in_millis:
+        latency += '000'
+    record.latency = parse_latency(latency)
+
     return record
 
 def format_value_for_munin(value, zero_allowed=False):
