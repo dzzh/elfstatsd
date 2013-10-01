@@ -10,6 +10,8 @@ In order to display data aggregated by this daemon in Munin, a number of plugins
 
 ## Build
 
+It is planned to add `elfstatsd` to PyPi soon and also distribute it via RPM files. Until it's done, you have to build it yourself following the procedure described below.
+
 ### Building the code from sources
 
 This code was originally written for Linux RHEL 6 and contains scripts to build RPMs for this OS. Packaging scripts for other Linux flavors are not yet implemented. Let me know if you are interested in having a package for your Linux version.
@@ -49,7 +51,7 @@ It is recommended, though not required, to setup [a virtual environment](http://
 
 `elfstatsd` can be run using a launcher that is installed into `/etc/init.d/elfstatsd`. To start the daemon, run `/etc/init.d/elfstatsd start` as root; to stop the daemon, run `/etc/init.d/elfstatsd stop`. 
 
-If you want use elfstatsd with default Python, a path to `elfstatsd` directory containing `elfstatsd.py` file has to be added to your `PYTHONPATH` (e.g. `export PYTHONPATH=$PYTHONPATH:/usr/local/lib/Python2.7/dist-packages`). 
+If you want use elfstatsd with default Python, a path to `elfstatsd` directory containing `elfstatsd.py` file has to be added to your `PYTHONPATH` (e.g. `export PYTHONPATH=$PYTHONPATH:/usr/local/lib/Python2.7/site-packages`). 
 
 Otherwise, if you use a virtual environment, you have to set `ELFSTATSD_VIRTUALENV_PATH` variable and point it to the root of the environment you had created (e.g. `export ELFSTATSD_VIRTUALENV_PATH=/srv/virtualenvs/munin`).
 

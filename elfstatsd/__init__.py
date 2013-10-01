@@ -1,1 +1,1 @@
-__version__ = "1.18-snapshot"
+__version__ = "1.18-dev"
