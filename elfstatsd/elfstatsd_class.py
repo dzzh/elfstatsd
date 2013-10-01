@@ -36,19 +36,18 @@ class ElfStatsDaemon():
 
         while True:
             #noinspection PyBroadException
+            started = datetime.datetime.now()
+            logger.info('elfstatsd v%s invoked at %s' % (daemon_version, str(started)))
             try:
-                started = datetime.datetime.now()
-                logger.info('elfstatsd v%s invoked at %s' % (daemon_version, str(started)))
-
                 for log_file, dump_file in settings.DATA_FILES:
                     self._process_file(dump_file, log_file, started)
-
-                self.period_start = started
-                self._good_night(started)
             except SystemExit:
                 raise
-            except:
-                logger.exception('An error has occurred.')
+            except BaseException as e:
+                logger.exception('An error has occurred: %s' %e.message)
+            finally:
+                self.period_start = started
+                self._good_night(started)
 
     def _good_night(self, started):
         """Wait until it's time for a new round."""
