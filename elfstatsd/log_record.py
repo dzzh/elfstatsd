@@ -7,6 +7,7 @@ APACHELOG_DATETIME_FORMAT = '%Y%m%d%H%M%S'
 
 logger = logging.getLogger("elfstatsd")
 
+
 class LogRecord():
 
     def __init__(self):
@@ -80,5 +81,5 @@ class LogRecord():
         else:
             match = self._match_against_regexes(settings.REQUESTS_TO_SKIP)
             if not match:
-                logger.info('Request not parsed: %s' %self.request)
+                logger.info('Request not parsed: %s' % self.request)
             return None, None

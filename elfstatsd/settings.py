@@ -16,18 +16,18 @@ STALLED_CALL_THRESHOLD = 4000
 DATA_FILES = [
     ('/srv/log/httpd/apache.access.log-%Y-%m-%d-%H', '/tmp/elfstatsd-apache.data'),
     ('/srv/log/httpd/tomcat.access.log-%Y-%m-%d-%H', '/tmp/elfstatsd-tomcat.data'),
-    ]
+]
 
 # List of regular expressions to be matched when parsing the request. Each expression should contain
 # 'method' named group and optionally 'group' named group that will be parsed and displayed in Munin.
-# Example: for '/content/service/call' request that is checked against r'^/content/(?P<group>\w+)/(?P<method>\w+)[/?%&]',
+# Example: for '/content/service/call' req. that is checked against r'^/content/(?P<group>\w+)/(?P<method>\w+)[/?%&]',
 # you will get 'service' as group, 'call' as method name.
 # Methods without group are put into 'nogroup' group.
 # As soon as first match is found, matching process stops.
 VALID_REQUESTS = [
     re.compile(r'^/content/(?P<group>[\w.]+)/(?P<method>[\w.]+)[/?%&]?'),
     re.compile(r'^/content/(?P<method>[\w.]+)[/?%&]?'),
-    ]
+]
 
 # Requests matching at least one of regexes in this list are not reflected in statistics and logs.
 # Only requests that did not pass VALID_REQUESTS validation are tested here. If a request is considered
@@ -35,7 +35,7 @@ VALID_REQUESTS = [
 REQUESTS_TO_SKIP = [
     re.compile(r'^/$'),
     re.compile(r'^/skip'),
-    ]
+]
 
 # Additional aggregation for valid requests for more flexibility.
 # After a request matches a regex in VALID_REQUESTS and is considered valid,
@@ -44,7 +44,7 @@ REQUESTS_TO_SKIP = [
 # Records are tuples in form (group, method, regex)
 REQUESTS_AGGREGATION = [
     ('group', 'method', re.compile(r'/service/call/to/aggregate')),
-    ]
+]
 
 # Symbols to be removed from method names (Munin cannot process them in field names)
 FORBIDDEN_SYMBOLS = re.compile(r'[.-]')
@@ -62,7 +62,7 @@ LATENCY_IN_MILLISECONDS = False
 #
 
 # Maximum size of a single log file, in bytes
-MAX_LOG_FILE_SIZE=10000000
+MAX_LOG_FILE_SIZE = 10000000
 
 # Maximum number of log files to keep (meaning log files reporting about elfstatsd state, not target logs to be parsed)
 MAX_LOG_FILES = 5

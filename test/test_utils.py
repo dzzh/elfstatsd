@@ -2,7 +2,9 @@ import datetime
 from elfstatsd import log_record, settings
 import pytest
 import apachelog
-from elfstatsd.utils import parse_latency, MILLISECOND_EXPONENT, MICROSECOND_EXPONENT, SECOND_EXPONENT, NANOSECOND_EXPONENT, parse_line, format_value_for_munin, format_filename
+from elfstatsd.utils import parse_latency, MILLISECOND_EXPONENT, MICROSECOND_EXPONENT, SECOND_EXPONENT
+from elfstatsd.utils import NANOSECOND_EXPONENT, parse_line, format_value_for_munin, format_filename
+
 
 @pytest.fixture(scope='function')
 def utils_setup(monkeypatch):
@@ -10,7 +12,9 @@ def utils_setup(monkeypatch):
     Monkeypatch settings setup for utils module.
     """
     monkeypatch.setattr(log_record, 'APACHELOG_DATETIME_FORMAT', '%Y%m%d%H%M%S')
-    monkeypatch.setattr(settings, 'ELF_FORMAT', r'%h %l %u %t \"%r\" %>s %B \"%{Referer}i\" \"%{User-Agent}i\" %{JK_LB_FIRST_NAME}n %{JK_LB_LAST_NAME}n %{JK_LB_LAST_STATE}n %I %O %D')
+    monkeypatch.setattr(settings, 'ELF_FORMAT',
+                        r'%h %l %u %t \"%r\" %>s %B \"%{Referer}i\" \"%{User-Agent}i\" '
+                        r'%{JK_LB_FIRST_NAME}n %{JK_LB_LAST_NAME}n %{JK_LB_LAST_STATE}n %I %O %D')
     return monkeypatch
 
 
@@ -81,12 +85,11 @@ class TestLatency():
 
 @pytest.mark.usefixtures("utils_setup")
 class TestParseLine():
-
     def test_valid(self, monkeypatch):
         utils_setup(monkeypatch)
 
-        line = u'172.19.0.40 - - [08/Aug/2013:10:59:59 +0200] "POST /content/csl/contentupdate/xxx HTTP/1.1" 200 8563 "-" ' \
-               u'"Apache-HttpClient/4.2.1 (java 1.5)" community1 community1 OK 14987 8785 53047'
+        line = u'172.19.0.40 - - [08/Aug/2013:10:59:59 +0200] "POST /content/csl/contentupdate/xxx HTTP/1.1" 200 8563 '\
+               u'"-" "Apache-HttpClient/4.2.1 (java 1.5)" community1 community1 OK 14987 8785 53047'
         parser = apachelog.parser(settings.ELF_FORMAT)
         record = parse_line(line, parser)
 
@@ -108,7 +111,7 @@ class TestParseLine():
     def test_empty_request(self, monkeypatch):
         utils_setup(monkeypatch)
 
-        line = u'172.19.0.40 - - [08/Aug/2013:10:59:59 +0200] "" 200 8563 "-" '\
+        line = u'172.19.0.40 - - [08/Aug/2013:10:59:59 +0200] "" 200 8563 "-" ' \
                u'"Apache-HttpClient/4.2.1 (java 1.5)" community1 community1 OK 14987 8785 53047'
         parser = apachelog.parser(settings.ELF_FORMAT)
         record = parse_line(line, parser)
@@ -118,8 +121,8 @@ class TestParseLine():
     def test_with_latency_in_milliseconds(self, monkeypatch):
         utils_setup(monkeypatch)
 
-        line = u'172.19.0.40 - - [08/Aug/2013:10:59:59 +0200] "POST /content/csl/contentupdate/xxx HTTP/1.1" 200 8563 "-" '\
-               u'"Apache-HttpClient/4.2.1 (java 1.5)" community1 community1 OK 14987 8785 1253'
+        line = u'172.19.0.40 - - [08/Aug/2013:10:59:59 +0200] "POST /content/csl/contentupdate/xxx HTTP/1.1" 200 8563 '\
+               u'"-" "Apache-HttpClient/4.2.1 (java 1.5)" community1 community1 OK 14987 8785 1253'
         parser = apachelog.parser(settings.ELF_FORMAT)
         record = parse_line(line, parser, True)
 
@@ -128,8 +131,8 @@ class TestParseLine():
     def test_with_latency_in_microseconds(self, monkeypatch):
         utils_setup(monkeypatch)
 
-        line = u'172.19.0.40 - - [08/Aug/2013:10:59:59 +0200] "POST /content/csl/contentupdate/xxx HTTP/1.1" 200 8563 "-" '\
-               u'"Apache-HttpClient/4.2.1 (java 1.5)" community1 community1 OK 14987 8785 1253'
+        line = u'172.19.0.40 - - [08/Aug/2013:10:59:59 +0200] "POST /content/csl/contentupdate/xxx HTTP/1.1" 200 8563 '\
+               u'"-" "Apache-HttpClient/4.2.1 (java 1.5)" community1 community1 OK 14987 8785 1253'
         parser = apachelog.parser(settings.ELF_FORMAT)
         record = parse_line(line, parser, False)
 
@@ -138,8 +141,8 @@ class TestParseLine():
     def test_invalid_date_day(self, monkeypatch):
         utils_setup(monkeypatch)
 
-        line = u'172.19.0.40 - - [08/Jah/2013:10:59:59 +0200] "POST /content/csl/contentupdate/xxx HTTP/1.1" 200 8563 "-" '\
-               u'"Apache-HttpClient/4.2.1 (java 1.5)" community1 community1 OK 14987 8785 53047'
+        line = u'172.19.0.40 - - [08/Jah/2013:10:59:59 +0200] "POST /content/csl/contentupdate/xxx HTTP/1.1" 200 8563 '\
+               u'"-" "Apache-HttpClient/4.2.1 (java 1.5)" community1 community1 OK 14987 8785 53047'
         parser = apachelog.parser(settings.ELF_FORMAT)
         record = parse_line(line, parser)
         assert record is None
@@ -147,8 +150,8 @@ class TestParseLine():
     def test_invalid_response_code(self, monkeypatch):
         utils_setup(monkeypatch)
 
-        line = u'172.19.0.40 - - [08/Aug/2013:10:59:59 +0200] "POST /content/csl/contentupdate/xxx HTTP/1.1" 200.1 8563 "-" '\
-               u'"Apache-HttpClient/4.2.1 (java 1.5)" community1 community1 OK 14987 8785 53047'
+        line = u'172.19.0.40 - - [08/Aug/2013:10:59:59 +0200] "POST /content/csl/contentupdate/xxx HTTP/1.1" 200.1 ' \
+            u'8563 "-" "Apache-HttpClient/4.2.1 (java 1.5)" community1 community1 OK 14987 8785 53047'
         parser = apachelog.parser(settings.ELF_FORMAT)
         record = parse_line(line, parser)
         assert record is None
@@ -156,14 +159,14 @@ class TestParseLine():
     def test_empty_response_code(self, monkeypatch):
         utils_setup(monkeypatch)
 
-        line = u'172.19.0.40 - - [08/Aug/2013:10:59:59 +0200] "POST /content/csl/contentupdate/xxx HTTP/1.1" "" 8563 "-" '\
-               u'"Apache-HttpClient/4.2.1 (java 1.5)" community1 community1 OK 14987 8785 53047'
+        line = u'172.19.0.40 - - [08/Aug/2013:10:59:59 +0200] "POST /content/csl/contentupdate/xxx HTTP/1.1" "" 8563 ' \
+               u'"-" "Apache-HttpClient/4.2.1 (java 1.5)" community1 community1 OK 14987 8785 53047'
         parser = apachelog.parser(settings.ELF_FORMAT)
         record = parse_line(line, parser)
         assert record is None
 
-class TestFormatEmptyValue():
 
+class TestFormatEmptyValue():
     def test_format_valid(self):
         assert format_value_for_munin(17) == 17
 
@@ -178,7 +181,6 @@ class TestFormatEmptyValue():
 
 
 class TestFormatFilename():
-
     def test_format_filename_no_template(self):
         dt = datetime.datetime.now()
         assert format_filename('file.log', dt) == 'file.log'

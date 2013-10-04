@@ -15,7 +15,8 @@ END_OF_FILE = 'EOF'
 
 logger = logging.getLogger("elfstatsd")
 
-def parse_latency(latency, precision = MILLISECOND_EXPONENT):
+
+def parse_latency(latency, precision=MILLISECOND_EXPONENT):
     """
     Parse string value of latency to integer with predefined precision of returned result.
     Convert from int value in microseconds and from float value in nanoseconds
@@ -31,6 +32,7 @@ def parse_latency(latency, precision = MILLISECOND_EXPONENT):
     else:
         #float in nanoseconds
         return int(round(float(latency), precision) * 10 ** precision)
+
 
 def parse_line(line, log_parser, latency_in_millis=False):
     """
@@ -53,8 +55,8 @@ def parse_line(line, log_parser, latency_in_millis=False):
     try:
         record.time = apachelog.parse_date(data['%t'])
     except (IndexError, KeyError):
-        logger.warn('Parser was not able to parse date %s: ' %data['%t'])
-        logger.warn('Record with error: %s' %line)
+        logger.warn('Parser was not able to parse date %s: ' % data['%t'])
+        logger.warn('Record with error: %s' % line)
         return None
 
     record.line = line
@@ -63,15 +65,15 @@ def parse_line(line, log_parser, latency_in_millis=False):
     if len(request) > 1:
         record.request = request.split(' ')[1]
     else:
-        logger.warn('Parser was not able to parse the request %s: ' %request)
-        logger.warn('Record with error: %s' %line)
+        logger.warn('Parser was not able to parse the request %s: ' % request)
+        logger.warn('Record with error: %s' % line)
         return None
 
     try:
         record.response_code = int(data['%>s'])
     except ValueError:
-        logger.warn('Parser was not able to parse response code %s: ' %data['%>s'])
-        logger.warn('Record with error: %s' %line)
+        logger.warn('Parser was not able to parse response code %s: ' % data['%>s'])
+        logger.warn('Record with error: %s' % line)
         return None
 
     latency = data['%D']
@@ -81,8 +83,10 @@ def parse_line(line, log_parser, latency_in_millis=False):
 
     return record
 
+
 def format_value_for_munin(value, zero_allowed=False):
     return value if value or (zero_allowed and value == 0) else 'U'
+
 
 def format_filename(name, dt):
     """Generate file name from a template containing formatted string and time value"""

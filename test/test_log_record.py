@@ -3,6 +3,7 @@ import pytest
 import re
 from elfstatsd import settings, log_record
 
+
 @pytest.fixture(scope='function')
 def log_record_setup(monkeypatch):
     """
@@ -10,26 +11,26 @@ def log_record_setup(monkeypatch):
     """
     monkeypatch.setattr(log_record, 'APACHELOG_DATETIME_FORMAT', '%Y%m%d%H%M%S')
     monkeypatch.setattr(settings, 'VALID_REQUESTS',
-        [
-        re.compile(r'^/data/(?P<group>[\w.]+)/(?P<method>[\w.]+)[/?%&]?'),
-        re.compile(r'^/data/(?P<method>[\w.]+)[/?%&]?'),
-        re.compile(r'^/data'),
-        ])
+                        [
+                            re.compile(r'^/data/(?P<group>[\w.]+)/(?P<method>[\w.]+)[/?%&]?'),
+                            re.compile(r'^/data/(?P<method>[\w.]+)[/?%&]?'),
+                            re.compile(r'^/data'),
+                        ])
     monkeypatch.setattr(settings, 'REQUESTS_TO_SKIP',
-        [
-        re.compile(r'^/$'),
-        re.compile(r'^/skipped/request'),
-        ])
+                        [
+                            re.compile(r'^/$'),
+                            re.compile(r'^/skipped/request'),
+                        ])
     monkeypatch.setattr(settings, 'REQUESTS_AGGREGATION',
-        [
-        ('newgroup', 'newmethod', re.compile(r'^/data/aggregate/me$'))
-        ])
-    monkeypatch.setattr(settings,'FORBIDDEN_SYMBOLS', re.compile(r'[.-]'))
+                        [
+                            ('newgroup', 'newmethod', re.compile(r'^/data/aggregate/me$'))
+                        ])
+    monkeypatch.setattr(settings, 'FORBIDDEN_SYMBOLS', re.compile(r'[.-]'))
     return monkeypatch
+
 
 @pytest.mark.usefixtures("log_record_setup")
 class TestLogRecord():
-
     def test_get_time_correct(self, monkeypatch):
         log_record_setup(monkeypatch)
 

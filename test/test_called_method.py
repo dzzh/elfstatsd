@@ -2,18 +2,19 @@ from elfstatsd import settings
 import pytest
 from elfstatsd.called_method import CalledMethod
 
+
 @pytest.fixture(scope='class')
 def called_method():
     """
     Instance of a CalledMethod class with pre-set attributes
     """
     method = CalledMethod('method')
-    method.calls = [10,20,30,40,50,60,70,80,90]
+    method.calls = [10, 20, 30, 40, 50, 60, 70, 80, 90]
     return method
+
 
 @pytest.mark.usefixtures('called_method')
 class TestCalledMethod():
-
     def test_num_calls(self):
         assert called_method().num_calls == 9
 
@@ -38,7 +39,6 @@ class TestCalledMethod():
         assert CalledMethod('method').percentile(0.5) == 0
 
     def test_stalled(self, monkeypatch):
-
         monkeypatch.setattr(settings, 'STALLED_CALL_THRESHOLD', 69)
         assert called_method().stalled == 3
 

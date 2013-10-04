@@ -5,15 +5,16 @@ import os
 import time
 import bisect
 import apachelog
-from types import NoneType
 from __init__ import __version__ as daemon_version
 from called_method import CalledMethod
-import seek_utils, utils, settings
+import seek_utils
+import utils
+import settings
 
 logger = logging.getLogger("elfstatsd")
 
-class ElfStatsDaemon():
 
+class ElfStatsDaemon():
     def __init__(self):
         self.stdin_path = '/dev/null'
         self.stdout_path = '/dev/null'
@@ -44,7 +45,7 @@ class ElfStatsDaemon():
             except SystemExit:
                 raise
             except BaseException as e:
-                logger.exception('An error has occurred: %s' %e.message)
+                logger.exception('An error has occurred: %s' % e.message)
             finally:
                 self.period_start = started
                 self._good_night(started)
@@ -99,28 +100,28 @@ class ElfStatsDaemon():
         self._dump_stats(dump_file)
         self._cleanup(dump_file)
 
-    def _parse_file(self, storage_key, file, read_from_start=False, read_to_time=None):
+    def _parse_file(self, storage_key, file_path, read_from_start=False, read_to_time=None):
         """
         Read recent part of the log file, update statistics storages, adjust seek.
         If only file parameter is supplied, reads file from self.seek to the end.
         If the file is not found or cannot be read, an error is logged and the function returns
 
         @param str storage_key: a key to define statistics storage
-        @param string file: path to file for parsing
+        @param string file_path: path to file for parsing
         @param bool read_from_start: if true, read from beginning of file, otherwise from self.seek
-        @param datetime read_to_time: if set, records are parsed until their time is greater or equal of parameter value. \
+        @param datetime read_to_time: if set, records are parsed until their time is greater or equal of parameter value
         Otherwise the file is read till the end.
         """
 
         try:
-            f = open(file, 'r')
+            f = open(file_path, 'r')
         except IOError as e:
-            logger.error('Could not open file %s' % file)
+            logger.error('Could not open file %s' % file_path)
             logger.error('I/O error({0}): {1}'.format(e.errno, e.strerror))
             return
 
         if not read_from_start:
-            f.seek(self.seek[file])
+            f.seek(self.seek[file_path])
 
         log_parser = apachelog.parser(settings.ELF_FORMAT)
 
@@ -129,21 +130,21 @@ class ElfStatsDaemon():
             line = f.readline()
             if not line:
                 #Reached end of file, record seek and stop
-                self.seek[file] = current_seek
+                self.seek[file_path] = current_seek
                 break
             record = utils.parse_line(line, log_parser, settings.LATENCY_IN_MILLISECONDS)
             if not record:
                 continue
             if read_to_time:
                 time = record.get_time()
-                if type(time) == NoneType:
+                if time is None:
                     logger.error('Could not process time string: ' + record.time)
                     logger.error('Line: ' + record.line)
                     continue
                 if time >= read_to_time:
                     #Reached a record with timestamp higher than end of current analysis period
                     #Stop here and leave it for the next invocation.
-                    self.seek[file] = current_seek
+                    self.seek[file_path] = current_seek
                     break
             if record:
                 self._process_record(storage_key, record)
@@ -161,10 +162,10 @@ class ElfStatsDaemon():
             self._add_call(storage_key, method_name, record.latency)
         self._add_response_code(storage_key, record.response_code)
 
-    def _dump_stats(self, file):
+    def _dump_stats(self, file_path):
         """Dump statistics to DUMP_FILE in ConfigParser format."""
 
-        storage_key = file
+        storage_key = file_path
         dump = ConfigParser.RawConfigParser()
         for method in self.method_stats[storage_key].values():
             section = 'method_' + method.name
@@ -182,13 +183,13 @@ class ElfStatsDaemon():
         dump.add_section(section)
         for code, value in self.response_codes_stats[storage_key].iteritems():
             dump.set(section, str(code), utils.format_value_for_munin(value))
-        #Add response codes from settings with 0 value if they are not met in logs
+            #Add response codes from settings with 0 value if they are not met in logs
         #Is needed for Munin not to drop these codes from the charts
         for code in settings.RESPONSE_CODES:
             if not code in self.response_codes_stats[storage_key].keys():
                 dump.set(section, str(code), utils.format_value_for_munin(''))
 
-        with open(file, 'wb') as f:
+        with open(file_path, 'wb') as f:
             dump.write(f)
 
     def _cleanup(self, storage_key):

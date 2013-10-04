@@ -11,6 +11,7 @@ from logging.handlers import RotatingFileHandler
 from elfstatsd_class import ElfStatsDaemon
 import settings
 
+
 class FormatterWithLongerTraceback(logging.Formatter):
     def formatException(self, ei):
         sio = cStringIO.StringIO()
@@ -21,16 +22,17 @@ class FormatterWithLongerTraceback(logging.Formatter):
             s = s[:-1]
         return s
 
+
 daemon = ElfStatsDaemon()
 logger = logging.getLogger("elfstatsd")
 logger.setLevel(settings.LOGGING_LEVEL)
 formatter = FormatterWithLongerTraceback("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 handler = RotatingFileHandler(os.path.join(settings.DAEMON_LOG_DIR, 'elfstatsd.log'),
-    maxBytes=settings.MAX_LOG_FILE_SIZE, backupCount=settings.MAX_LOG_FILES)
+                              maxBytes=settings.MAX_LOG_FILE_SIZE, backupCount=settings.MAX_LOG_FILES)
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
 daemon_runner = runner.DaemonRunner(daemon)
 #This ensures that the logger file handle does not get closed during daemonization
-daemon_runner.daemon_context.files_preserve=[handler.stream]
+daemon_runner.daemon_context.files_preserve = [handler.stream]
 daemon_runner.do_action()

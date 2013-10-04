@@ -1,15 +1,17 @@
 import logging
 import os
 import apachelog
-import settings, utils
+import settings
+import utils
 
 logger = logging.getLogger("elfstatsd")
+
 
 def get_seek(file_path, period_start):
     """Given a file path, find a position in it where the records for a tracked period start."""
 
     try:
-        file = open(file_path, 'r')
+        f = open(file_path, 'r')
     except IOError as e:
         logger.error('Could not open file %s' % file_path)
         logger.error('I/O error({0}): {1}'.format(e.errno, e.strerror))
@@ -17,28 +19,30 @@ def get_seek(file_path, period_start):
 
     log_parser = apachelog.parser(settings.ELF_FORMAT)
     size = os.stat(file_path).st_size
-    approximate_seek = _find_approximate_seek_before_period_by_moving_back(file, size, log_parser, period_start)
-    exact_seek = _find_exact_seek_before_period_by_moving_forward(file, log_parser, approximate_seek, period_start)
-    file.close()
+    approximate_seek = _find_approximate_seek_before_period_by_moving_back(f, size, log_parser, period_start)
+    exact_seek = _find_exact_seek_before_period_by_moving_forward(f, log_parser, approximate_seek, period_start)
+    f.close()
     return exact_seek
 
-def _find_approximate_seek_before_period_by_moving_back(file, size, log_parser, period_start):
+
+def _find_approximate_seek_before_period_by_moving_back(f, size, log_parser, period_start):
     """
     Return a position in a file that is guaranteed to start a record that is earlier than period start or 0.
-    @param TextIOWrapper file: file to seek
+    @param FileIO f: file to seek
     @param long size: file size
     @param log_parser: instance of a log parser
     @return long seek
     """
     positions = _get_seek_positions(size)
     for position in positions:
-        file.seek(position)
-        file.readline() #setting seek to the beginning of the next line
-        candidate = file.tell()
-        record = _read_record(file, log_parser)
+        f.seek(position)
+        f.readline()  # setting seek to the beginning of the next line
+        candidate = f.tell()
+        record = _read_record(f, log_parser)
         if _is_record_valid(record) and _is_record_before_time(record, period_start):
             return candidate
     return 0
+
 
 def _get_seek_positions(size):
     """
@@ -62,20 +66,21 @@ def _get_seek_positions(size):
         else:
             return result
 
-def _find_exact_seek_before_period_by_moving_forward(file, log_parser, start_position, period_start):
+
+def _find_exact_seek_before_period_by_moving_forward(f, log_parser, start_position, period_start):
     """
     Return position of a first record within tracked period or end of file if no satisfying records are found.
 
-    @param TextIOWrapper file: file to seek
+    @param FileIO f: file to seek
     @param log_parser: instance of a log parser
     @param long start_position: position to start seeking from
     """
 
     seek_candidate = start_position
-    file.seek(seek_candidate)
+    f.seek(seek_candidate)
     while True:
-        seek_candidate = file.tell()
-        record = _read_record(file, log_parser)
+        seek_candidate = f.tell()
+        record = _read_record(f, log_parser)
         if _is_record_valid(record):
             if _is_record_before_time(record, period_start):
                 continue
@@ -83,21 +88,24 @@ def _find_exact_seek_before_period_by_moving_forward(file, log_parser, start_pos
                 return seek_candidate
         else:
             if record == utils.END_OF_FILE:
-                return file.tell()
+                return f.tell()
             else:
                 continue
 
-def _read_record(file, log_parser):
-    line = file.readline()
+
+def _read_record(f, log_parser):
+    line = f.readline()
     if not line:
         return utils.END_OF_FILE
     return utils.parse_line(line, log_parser)
+
 
 def _is_record_before_time(record, time):
     dt = record.get_time()
     if dt < time:
         return True
     return False
+
 
 def _is_record_valid(record):
     return True if record and not record == utils.END_OF_FILE and record.get_time() else False
