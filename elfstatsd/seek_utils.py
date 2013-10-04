@@ -19,8 +19,11 @@ def get_seek(file_path, period_start):
 
     log_parser = apachelog.parser(settings.ELF_FORMAT)
     size = os.stat(file_path).st_size
+    logger.debug('Running get_seek() for file %s' % f.name)
     approximate_seek = _find_approximate_seek_before_period_by_moving_back(f, size, log_parser, period_start)
+    logger.debug('approximate seek for %s is set to %d' % (f.name, approximate_seek))
     exact_seek = _find_exact_seek_before_period_by_moving_forward(f, log_parser, approximate_seek, period_start)
+    logger.debug('exact seek for %s returns seek %d' % (f.name, exact_seek))
     f.close()
     return exact_seek
 

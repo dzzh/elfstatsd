@@ -51,7 +51,10 @@ class ElfStatsDaemon():
                 self._good_night(started)
 
     def _good_night(self, started):
-        """Wait until it's time for a new round."""
+        """Wait until it's time for a new round.
+
+        @param datetime started: starting time of current round
+        """
 
         finished = datetime.datetime.now()
         elapsed_seconds = (finished - started).seconds
@@ -90,6 +93,7 @@ class ElfStatsDaemon():
             #Processing the situation when the log was rotated in-place between daemon executions.
             #In this situation we start reading file from start.
             read_from_start = True if file_size < self.seek[file_at_started] else False
+            logger.debug('File size decreased, read it from start')
 
             self._parse_file(dump_file, file_at_started, read_from_start=read_from_start, read_to_time=started)
         else:
@@ -122,6 +126,8 @@ class ElfStatsDaemon():
 
         if not read_from_start:
             f.seek(self.seek[file_path])
+            logger.debug('Setting seek for file %s to %d based on a value from a storage'
+                         % (f.name, self.seek[file_path]))
 
         log_parser = apachelog.parser(settings.ELF_FORMAT)
 
@@ -131,6 +137,7 @@ class ElfStatsDaemon():
             if not line:
                 #Reached end of file, record seek and stop
                 self.seek[file_path] = current_seek
+                logger.debug('Reached end of file %s, set seek in storage to %d' % (f.name, current_seek))
                 break
             record = utils.parse_line(line, log_parser, settings.LATENCY_IN_MILLISECONDS)
             if not record:
@@ -145,9 +152,12 @@ class ElfStatsDaemon():
                     #Reached a record with timestamp higher than end of current analysis period
                     #Stop here and leave it for the next invocation.
                     self.seek[file_path] = current_seek
+                    logger.debug('Reached end of period, set seek for %s in storage to %d' % (f.name, current_seek))
                     break
             if record:
                 self._process_record(storage_key, record)
+
+        f.close()
 
     def _process_record(self, storage_key, record):
         """
