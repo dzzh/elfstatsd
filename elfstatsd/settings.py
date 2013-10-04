@@ -13,9 +13,16 @@ INTERVAL = 300
 STALLED_CALL_THRESHOLD = 4000
 
 # A list of tuples containing input and output data files
+# The first element - path to the file with actual access log. May contain date and time specification,
+# you should define them in Python datetime format then.
+# The second element - path to the file with previous part of the log. Is only used when the logs are rotated
+# in-place. This setting is not taking into account if the log file names are generated using datetime parameters.
+# If this setting is omitted for in-place rotating logs, some records in the end of file may be not processed by daemon.
+# The third element - path to a file where you want to store aggregated data.
+# Munin plugins should read and parse this file.
 DATA_FILES = [
-    ('/srv/log/httpd/apache.access.log-%Y-%m-%d-%H', '/tmp/elfstatsd-apache.data'),
-    ('/srv/log/httpd/tomcat.access.log-%Y-%m-%d-%H', '/tmp/elfstatsd-tomcat.data'),
+    ('/srv/log/httpd/apache.access.log-%Y-%m-%d-%H', '', '/tmp/elfstatsd-apache.data'),
+    ('/srv/log/httpd/tomcat.log', 'tomcat.1.log', '/tmp/elfstatsd-tomcat.data'),
 ]
 
 # List of regular expressions to be matched when parsing the request. Each expression should contain

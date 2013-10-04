@@ -40,8 +40,8 @@ class ElfStatsDaemon():
             started = datetime.datetime.now()
             logger.info('elfstatsd v%s invoked at %s' % (daemon_version, str(started)))
             try:
-                for log_file, dump_file in settings.DATA_FILES:
-                    self._process_file(dump_file, log_file, started)
+                for current_log_file, previous_log_file, dump_file in settings.DATA_FILES:
+                    self._process_file(started, current_log_file, previous_log_file, dump_file)
             except SystemExit:
                 raise
             except BaseException as e:
@@ -63,13 +63,14 @@ class ElfStatsDaemon():
         if elapsed_seconds < settings.INTERVAL:
             time.sleep(settings.INTERVAL - int(elapsed_seconds) - float(elapsed_microseconds))
 
-    def _process_file(self, dump_file, log_file, started):
+    def _process_file(self, started, current_log_file, previous_log_file, dump_file):
         """
         Read records from log_file starting at started and dump them to dump_file.
 
-        @param str dump_file: file to save aggregated data
-        @param str log_file: access log file
         @param datetime started: start of the tracked period
+        @param str current_log_file: path to log file
+        @param str previous_log_file: if in-place rotation of access logs is used, path to log file before current
+        @param str dump_file: file to save aggregated data
         """
 
         #create entries in dictionaries with aggregated data
@@ -78,8 +79,8 @@ class ElfStatsDaemon():
             self.response_codes_stats[dump_file] = dict()
 
         #Generate file names from a template and timestamps
-        file_at_period_start = utils.format_filename(log_file, self.period_start)
-        file_at_started = utils.format_filename(log_file, started)
+        file_at_period_start = utils.format_filename(current_log_file, self.period_start)
+        file_at_started = utils.format_filename(current_log_file, started)
 
         #If the daemon has just started, it does not have associated seek for the input file
         #and it has to be set to period_start
@@ -94,6 +95,10 @@ class ElfStatsDaemon():
             #In this situation we start reading file from start.
             read_from_start = True if file_size < self.seek[file_at_started] else False
             logger.debug('File size decreased, read it from start')
+            if read_from_start and previous_log_file:
+                logger.debug('Reading previous log file to the end')
+                replaced_file = utils.format_filename(previous_log_file, started)
+                self._parse_file(dump_file, replaced_file)
 
             self._parse_file(dump_file, file_at_started, read_from_start=read_from_start, read_to_time=started)
         else:
