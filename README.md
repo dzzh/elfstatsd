@@ -6,19 +6,21 @@ A daemon process to aggregate statistics from access logs of different HTTP serv
 
 Daemon code is written at Python programming language and requires Python 2.6.x/2.7.x to run. Adding Python 2.4-3.x support is in plans.
 
-In order to display data aggregated by this daemon in Munin, a number of plugins for it are needed. These plugins are distributed separately and will soon be available here at Github.
+In order to display data aggregated by this daemon in Munin, a number of plugins for it are needed. These plugins are distributed separately and will soon be available here at Github. To simplify daemon's installation, you can check out [elfstats-env](https://github.com/dzzh/elfstats-env) repository containing environment setup for the daemon (RHEL6 OS is only supported so far by elfstats-env).
 
 ## Build
 
-It is planned to add elfstatsd to PyPi soon and also distribute it via RPM files. Until it's done, you have to build it yourself following the procedure described below.
+Elfstatsd is distributed via source code and RPM packages. It is planned to add elfstatsd to PyPi in future. RPM files for RHEL6_x64 can be found in [Releases](https://github.com/dzzh/elfstatsd/releases). If you need in a distribution in a different format, you have to build elfstatsd from the sources as explained below.
 
 ### Building the code from sources
 
 This code was originally written for Linux RHEL 6 and contains scripts to build RPMs for this OS. Packaging scripts for other POSIX flavors are not yet implemented. Let me know if you are interested in having a package for your OS distribution.
 
-It is recommended, though not required, to setup [a virtual environment](http://www.virtualenv.org) to run this daemon. 
+It is recommended, though not required, to setup [a virtual environment](http://www.virtualenv.org) to run this daemon. An RPM with such an environment set up and ready to go is maintained in [elfstats-env](https://github.com/dzzh/elfstats-env) repository. If the provided package does not suit you, you can use default Python installation or create a virtual environment yourselft. Instructions to do so are provided below. 
 
 #### Common operations
+
+Whether you want to build an RPM for elfstatsd or install it from source codes, you first have to complete the following operations.
 
 * At first, clone the repository: `git clone https://github.com/dzzh/elfstatsd`.
 
@@ -28,7 +30,7 @@ It is recommended, though not required, to setup [a virtual environment](http://
 
 * Switch to the virtual environment by issuing `source /path/to/virtualenv/bin/activate` if you want to use it. If you want to install elfstatsd using your default Python, you can skip this step. Just make sure that your Python version is either 2.6.x or 2.7.x by running `python --version`.
 
-* Install dependencies. Daemon requires a number of other Python modules to operate. They are listed in `requirements.txt` and generally have to be downloaded automatically when installing the software. However, sometimes this does not happen and it is safer to do it manually. You can easily install all the required modules with [`pip`](www.pip-installer.org). To do this, install pip and run `pip install -r requirements.txt`. (If you work with the virtual environment, pip is pre-installed there.)
+* Install dependencies. Daemon requires a number of other Python modules to operate. They are listed in `requirements.txt` and can easily be installed with [pip](www.pip-installer.org). To do this, install pip and run `pip install -r requirements.txt`. (If you work with the virtual environment, pip is pre-installed there.)
 
 #### Building and installing RPM for RHEL 6
 
@@ -36,7 +38,7 @@ It is recommended, though not required, to setup [a virtual environment](http://
 
 * Build rpm: `python setup.py bdist_rpm`. After this step, an RPM will be put in `elfstatsd/dist` directory.
 
-* Install rpm: `rpm -Uvh dist/elfstatsd-XX.XX.rpm`. This RPM can later be installed to the other machines without being re-built, but these machines should have virtual environment located at the same path as at the build machine or have to use default Python with installed dependencies. An RPM with the virtual environment set up for this daemon will soon be provided at Github.
+* Install rpm: `sudo yum install dist/elfstatsd-XX.XX.rpm`. This RPM can later be installed to the other machines without being re-built, but these machines should have virtual environment located at the same path as at the build machine or have to use default Python with installed dependencies. 
 
 #### Installation from source codes
 
@@ -44,15 +46,13 @@ It is recommended, though not required, to setup [a virtual environment](http://
 
 * Install module using its setup script: `python setup.py install`. 
 
-* Installation contains a post-install script requiring root access to be executed correctly. In order to let this script execute, you can either run installation as root or run this post-install script separately after the installation from a non-root user: `sudo sh scripts/post-install.sh`. This script will create directories for internal process logging and `.pid` file storing as well as will perform some other necessary post-installation procedures. 
+* Installation contains a post-install script requiring root access to be executed correctly. If you install elfstatsd as an RPM package, this script is executed automatically. Otherwise you have to do it manually: `sudo sh scripts/post-install.sh`. This script will create directories for internal process logging and `.pid` file storing as well as will perform some other necessary post-installation procedures. 
 
 ## Run
 
 elfstatsd can be run using a launcher that is installed into `/etc/init.d/elfstatsd`. To start the daemon, run `/etc/init.d/elfstatsd start` as root; to stop the daemon, run `/etc/init.d/elfstatsd stop`. 
 
-If you want to use elfstatsd with default Python, a path to `elfstatsd` directory containing `elfstatsd.py` file has to be added to your `PYTHONPATH` (e.g. `export PYTHONPATH=$PYTHONPATH:/usr/local/lib/Python2.7/site-packages`). 
-
-Otherwise, if you use a virtual environment, you have to set `ELFSTATSD_VIRTUALENV_PATH` variable and point it to the root of the environment you had created (e.g. `export ELFSTATSD_VIRTUALENV_PATH=/srv/virtualenvs/elfstats`).
+To find location of daemon's main file, the launcher uses a configuration file placed in `/etc/sysconfig/elfstats`. By default, it contains `ELFSTATSD_VIRTUALENV_PATH` variable pointing at virtual environment located at `/srv/virtualenvs/elfstats`. If you don't want to use a virtual environment, you can remove this file. In this case, default Python installation will be used to detect daemon's installation path. If you have installed elfstatsd to a different location, make sure it is in your PYTHONPATH. You can define PYTHONPATH in `/etc/sysconfig/elfstats`.
 
 Daemon needs in write access to the following directories:
 
@@ -62,13 +62,13 @@ Daemon needs in write access to the following directories:
 
 * `/var/run/elfstatsd`: for `.pid` file
 
-All of these paths can be re-declared in `settings.py`. Make sure that a user launching daemon has write access to all of them.
+All of these paths can be changed in `settings.py`. Make sure that a user launching daemon has write access to all of them.
 
 ## Test
 
 ### Running unit tests:
 
-Elfstatsd uses `py.test` as its testing framework. It is not defined as requirement for a project and you don't need in it to build and run the daemon. However, in case you want to make changes to the code and run the available tests, you can execute `python setup.py test`. If `py.test` is not installed at your machine, it will be downloaded automatically.
+Elfstatsd uses `py.test` as its testing framework. It is not defined as requirement for a project and you don't need in it to build and run the daemon. However, in case you want to make changes to the code and run the available tests to make sure your changes didn't break the available functionality, you can execute `python setup.py test`. If `py.test` is not installed at your machine, it will be downloaded automatically.
 
 
 ## Configuration
