@@ -31,6 +31,7 @@ class CustomInstall(InstallCommand):
         # Call parent
         InstallCommand.run(self)
         # Execute commands
+        #Disabled so far, has to be run manually
         # call(['sh', 'scripts/post-install.sh'])
 
 setup(
@@ -53,7 +54,8 @@ setup(
     provides=['elfstatsd'],
     platforms=['Linux'],
     data_files=[
-        ('/etc/init.d', ['scripts/elfstatsd']),
+        ('/etc/init.d', ['scripts/etc/init.d/elfstatsd']),
+        ('/etc/sysconfig', ['scripts/etc/sysconfig/elfstatsd']),
     ],
     long_description=read('README.md'),
     classifiers=[

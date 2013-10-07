@@ -14,12 +14,17 @@
 # Description:       Runs up the elfstatsd process
 ### END INIT INFO
 
+if [ -f /etc/sysconfig/elfstatsd ]
+    then
+        . /etc/sysconfig/elfstatsd
+fi
+
 if [ -z "${ELFSTATSD_VIRTUALENV_PATH+x}" ]
     then
-        #Virtual environment variable not set, use standard PYTHON_PATH
+        #Virtual environment variable not set, use standard PYTHONPATH
         if [ -z "${PYTHONPATH+x}" ]
             then
-                echo "Neither ELFSTATSD_VIRTUALENV_PATH nor PYTHONPATH are set, elfstatsd quits"
+                echo "Neither ELFSTATSD_VIRTUALENV_PATH nor PYTHONPATH are set, elfstatsd quits" >&2
                 exit 1
             else
                 DAEMON_PATH=$PYTHONPATH/elfstatsd/elfstatsd.py
@@ -33,17 +38,14 @@ fi
 
 case "$1" in
   start)
-    echo "Starting server"
     # Start the daemon
     python $DAEMON_PATH start
     ;;
   stop)
-    echo "Stopping server"
     # Stop the daemon
     python $DAEMON_PATH stop
     ;;
   restart)
-    echo "Restarting server"
     python $DAEMON_PATH restart
     ;;
   *)
