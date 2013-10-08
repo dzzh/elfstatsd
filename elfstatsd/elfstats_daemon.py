@@ -84,11 +84,13 @@ class ElfStatsDaemon():
 
         if not os.path.exists(file_at_started):
             logger.error('File %s is not found and will not be processed' % file_at_started)
+            self._finalize_processing(dump_file)
             return
 
         if file_at_period_start != file_at_started:
             if not os.path.exists(file_at_period_start):
                 logger.error('File %s is not found and will not be processed' % file_at_period_start)
+                self._finalize_processing(dump_file)
                 return
 
         #If the daemon has just started, it does not have associated seek for the input file
@@ -102,15 +104,17 @@ class ElfStatsDaemon():
 
             #Processing the situation when the log was rotated in-place between daemon executions.
             #In this situation we start reading file from start.
-            read_from_start = True if current_file_size < self.seek[file_at_started] else False
-            logger.debug('File size decreased, read it from start')
+            cur_seek = self.seek[file_at_started]
+            read_from_start = True if current_file_size < cur_seek or cur_seek == 0 else False
+
             if read_from_start and previous_log_file:
-                logger.debug('Reading previous log file to the end')
                 replaced_file = utils.format_filename(previous_log_file, started)
 
                 if not os.path.exists(replaced_file):
                     logger.error('File %s is not found and will not be processed' % replaced_file)
                 else:
+                    self.seek[replaced_file] = \
+                        cur_seek if cur_seek > 0 else seek_utils.get_seek(replaced_file, self.period_start)
                     self._parse_file(dump_file, replaced_file)
 
             self._parse_file(dump_file, file_at_started, read_from_start=read_from_start, read_to_time=started)
@@ -118,6 +122,14 @@ class ElfStatsDaemon():
             #First read previous file to the end, then current from beginning
             self._parse_file(dump_file, file_at_period_start)
             self._parse_file(dump_file, file_at_started, read_from_start=True, read_to_time=started)
+
+        self._finalize_processing(dump_file)
+
+    def _finalize_processing(self, dump_file):
+        """
+        Perform final procedures after processing log files: write data to dump file and clean up storage
+        @param str dump_file: path to file for dumping aggregated data
+        """
 
         self._dump_stats(dump_file)
         self._cleanup(dump_file)
@@ -134,12 +146,17 @@ class ElfStatsDaemon():
         @param datetime read_to_time: if set, records are parsed until their time is greater or equal of parameter value
         Otherwise the file is read till the end.
         """
-
         f = open(file_path, 'r')
+
+        if read_from_start:
+            logger.debug('Reading file %s from the beginning to %s' % (file_path, read_to_time))
+        else:
+            logger.debug('Reading file %s from position %d to %s'
+                         % (file_path, self.seek[file_path], read_to_time or 'the end'))
 
         if not read_from_start:
             f.seek(self.seek[file_path])
-            logger.debug('Setting seek for file %s to %d based on a value from a storage'
+            logger.debug('Setting seek for file %s to %d based on a value from the storage'
                          % (f.name, self.seek[file_path]))
 
         log_parser = apachelog.parser(settings.ELF_FORMAT)
