@@ -8,7 +8,7 @@ import traceback
 import os
 from daemon import runner
 from logging.handlers import RotatingFileHandler
-from elfstatsd_class import ElfStatsDaemon
+from elfstats_daemon import ElfStatsDaemon
 import settings
 
 

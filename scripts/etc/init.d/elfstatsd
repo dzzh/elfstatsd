@@ -1,4 +1,4 @@
-#! /bin/bash
+#!/bin/bash
 #
 # /etc/init.d/elfstatsd
 #
@@ -10,7 +10,7 @@
 # Should-Stop:
 # Default-Start:  3 5
 # Default-Stop:   0 1 2 6
-# Short-Description: elfstatsd daemon to aggregate http stats in ELF format for Munin
+# Short-Description: elfstatsd daemon to aggregate web server access stats in ELF format for Munin
 # Description:       Runs up the elfstatsd process
 ### END INIT INFO
 
@@ -19,34 +19,37 @@ if [ -f /etc/sysconfig/elfstatsd ]
         . /etc/sysconfig/elfstatsd
 fi
 
+ELFSTATSD_ARGS="-m elfstatsd"
+
 if [ -z "${ELFSTATSD_VIRTUALENV_PATH+x}" ]
     then
-        #Virtual environment variable not set, use standard PYTHONPATH
-        if [ -z "${PYTHONPATH+x}" ]
+        #Virtual environment variable not set, use ELFSTATSD_PATH with default Python
+        if [ -z "${ELFSTATSD_PATH+x}" ]
             then
-                echo "Neither ELFSTATSD_VIRTUALENV_PATH nor PYTHONPATH are set, elfstatsd quits" >&2
-                exit 1
+                #Neither ELFSTATSD_VIRTUALENV_PATH nor ELFSTATSD_PATH are set, use standard Python
+                true
             else
-                DAEMON_PATH=$PYTHONPATH/elfstatsd/elfstatsd.py
+                ELFSTATSD_ARGS=${ELFSTATSD_PATH}/elfstatsd/__main__.py
         fi
     else
         #Virtual environment variable set, activate environment and use it
-        source $ELFSTATSD_VIRTUALENV_PATH/bin/activate
-        PYTHON_VERSION=$(python -c'import sys; print "%i.%i" %(sys.version_info[0], sys.version_info[1])')
-        DAEMON_PATH=$ELFSTATSD_VIRTUALENV_PATH/lib/python$PYTHON_VERSION/site-packages/elfstatsd/elfstatsd.py
+        source ${ELFSTATSD_VIRTUALENV_PATH}/bin/activate
 fi
 
 case "$1" in
   start)
     # Start the daemon
-    python $DAEMON_PATH start
+    python ${ELFSTATSD_ARGS} start
+    echo "Elfstatsd started"
     ;;
   stop)
     # Stop the daemon
-    python $DAEMON_PATH stop
+    python ${ELFSTATSD_ARGS} stop
+    echo "Elfstatsd stopped"
     ;;
   restart)
-    python $DAEMON_PATH restart
+    python ${ELFSTATSD_ARGS} restart
+    echo "Elfstatsd restarted"
     ;;
   *)
     # Refuse to do other stuff

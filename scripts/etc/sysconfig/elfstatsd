@@ -1,1 +1,11 @@
-ELFSTATSD_VIRTUALENV_PATH="/srv/virtualenvs/elfstats"
+#!/bin/bash
+
+# If you use default Python and install elfstatsd to default packages location with setup.py install,
+# you don't need to specify any variables in this file.
+
+# Set this variable and point to the root of your virtual environment if you use it
+# ELFSTATSD_VIRTUALENV_PATH="/srv/virtualenvs/elfstats"
+
+# If you want to run elfstatsd using default Python from a non-default location of Python packages,
+# point this variable to the location where elfstatsd directory can be found
+# ELFSTATSD_PATH="/srv/virtualenvs/elfstats/lib/python2.7/site-packages"
