@@ -10,12 +10,7 @@ logger = logging.getLogger("elfstatsd")
 def get_seek(file_path, period_start):
     """Given a file path, find a position in it where the records for a tracked period start."""
 
-    try:
-        f = open(file_path, 'r')
-    except IOError as e:
-        logger.error('Could not open file %s' % file_path)
-        logger.error('I/O error({0}): {1}'.format(e.errno, e.strerror))
-        return
+    f = open(file_path, 'r')
 
     log_parser = apachelog.parser(settings.ELF_FORMAT)
     size = os.stat(file_path).st_size

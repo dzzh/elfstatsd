@@ -82,6 +82,15 @@ class ElfStatsDaemon():
         file_at_period_start = utils.format_filename(current_log_file, self.period_start)
         file_at_started = utils.format_filename(current_log_file, started)
 
+        if not os.path.exists(file_at_started):
+            logger.error('File %s is not found and will not be processed' % file_at_started)
+            return
+
+        if file_at_period_start != file_at_started:
+            if not os.path.exists(file_at_period_start):
+                logger.error('File %s is not found and will not be processed' % file_at_period_start)
+                return
+
         #If the daemon has just started, it does not have associated seek for the input file
         #and it has to be set to period_start
         if not file_at_period_start in self.seek.keys():
@@ -89,16 +98,20 @@ class ElfStatsDaemon():
 
         if file_at_period_start == file_at_started:
             #All the records we are interested in are in the same file
-            file_size = os.stat(file_at_started).st_size
+            current_file_size = os.stat(file_at_started).st_size
 
             #Processing the situation when the log was rotated in-place between daemon executions.
             #In this situation we start reading file from start.
-            read_from_start = True if file_size < self.seek[file_at_started] else False
+            read_from_start = True if current_file_size < self.seek[file_at_started] else False
             logger.debug('File size decreased, read it from start')
             if read_from_start and previous_log_file:
                 logger.debug('Reading previous log file to the end')
                 replaced_file = utils.format_filename(previous_log_file, started)
-                self._parse_file(dump_file, replaced_file)
+
+                if not os.path.exists(replaced_file):
+                    logger.error('File %s is not found and will not be processed' % replaced_file)
+                else:
+                    self._parse_file(dump_file, replaced_file)
 
             self._parse_file(dump_file, file_at_started, read_from_start=read_from_start, read_to_time=started)
         else:
@@ -122,12 +135,7 @@ class ElfStatsDaemon():
         Otherwise the file is read till the end.
         """
 
-        try:
-            f = open(file_path, 'r')
-        except IOError as e:
-            logger.error('Could not open file %s' % file_path)
-            logger.error('I/O error({0}): {1}'.format(e.errno, e.strerror))
-            return
+        f = open(file_path, 'r')
 
         if not read_from_start:
             f.seek(self.seek[file_path])
