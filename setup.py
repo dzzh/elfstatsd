@@ -59,7 +59,7 @@ setup(
     ],
     long_description=read('README.md'),
     classifiers=[
-        "Development Status :: 3 - Alpha",
+        "Development Status :: 4 - Beta",
         "Environment :: No Input/Output (Daemon)",
         "Intended Audience :: System Administrators",
         "License :: OSI Approved :: MIT License",

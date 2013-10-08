@@ -4,7 +4,7 @@ A daemon process to aggregate statistics from access logs of different HTTP serv
 
 Daemon code is written at Python programming language and requires Python 2.6.x/2.7.x to run. Adding Python 2.4-3.x support is in plans.
 
-In order to display data aggregated by this daemon in Munin, a number of plugins for it are needed. These plugins are distributed separately and will soon be available here at Github. To simplify daemon's installation, you can check out [elfstats-env](https://github.com/dzzh/elfstats-env) repository containing environment setup for the daemon (RHEL6 OS is only supported so far by elfstats-env).
+In order to display data aggregated by this daemon in Munin, a number of plugins for it are needed. These plugins are distributed separately and are available in [elfstats-munin](https://github.com/dzzh/elfstats-munin) repository. To simplify daemon's installation, you can check out [elfstats-env](https://github.com/dzzh/elfstats-env) repository containing environment setup for the daemon (RHEL6 OS is only supported so far by elfstats-env).
 
 ## Build and install
 
@@ -77,7 +77,7 @@ Elfstatsd uses `py.test` as its testing framework. It is not defined as requirem
 
 ## Data visualization with Munin
 
-To show data aggregated with elfstatsd in Munin, a set of plugins parsing aggregated data and sending it to Munin are needed. They will be published at Github soon with the integration guide.
+To show data aggregated with elfstatsd in Munin, a set of plugins parsing aggregated data and sending it to Munin are needed. These plugins can be installed from [elfstats-munin](https://github.com/dzzh/elfstats-munin) repository.
 
 ## Troubleshooting
 
