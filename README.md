@@ -1,8 +1,10 @@
 # Elfstatsd
 
-A daemon process to aggregate statistics from access logs of different HTTP servers (Apache, Tomcat, Nginx, etc.) for visualizing these data later with monitoring tools ([Munin](http://munin-monitoring.org) is the only tool supported by now). Elfstatsd parses logs in Extended Log Format (ELF) and reports such metrics as total number of calls, number of calls per method, aggregated latencies (min, max, avg, percentiles) and response codes. The results are written to files that are updated with each new run of daemon's execution. 
+A daemon process to aggregate statistics from access logs of different HTTP servers (Apache, Tomcat, Nginx, etc.) for visualizing these data later with monitoring tools ([Munin](http://munin-monitoring.org) is the only tool supported by now). Elfstatsd parses logs in Extended Log Format (ELF) and reports such metrics as number of requests per method, aggregated latencies (min, max, avg, percentiles) per request and response codes. The results are written to files that are updated with each new run of daemon's execution. 
 
-Daemon code is written at Python programming language and requires Python 2.6.x/2.7.x to run. Adding Python 2.4-3.x support is in plans.
+An advantage of this tool over the other existing scripts and utilities for monitoring web servers with access log files is its flexibility that allows to solve a various range of monitoring tasks. Such tasks usually require a lot of configuration effort from network administrators, as a foundation of proper visual monitoring is fine-grained tuning of the tracked requests. Elfstatsd parses the requests found in the access logs and associates them to different categories (later becoming different charts) automatically using simple regex-based rules and provides settings for advanced control over the distribution of requests into groups, if such measures are needed. It works with any ELF-based log file; it is only needed to copy access log format setting from your web server config to elfstasd.
+
+Daemon code is written in Python programming language and requires Python 2.6.x/2.7.x to run. Adding Python 2.4-3.x support is in plans.
 
 In order to display data aggregated by this daemon in Munin, a number of plugins for it are needed. These plugins are distributed separately and are available in [elfstats-munin](https://github.com/dzzh/elfstats-munin) repository. To simplify daemon's installation, you can check out [elfstats-env](https://github.com/dzzh/elfstats-env) repository containing environment setup for the daemon (RHEL6 OS is only supported so far by elfstats-env).
 
@@ -40,7 +42,7 @@ It is recommended, though not required, to setup [a virtual environment](http://
 
 * If you work with a virtual environment or install elfstatsd to a location different for the default for Python packages, make necessary adjustments to `/etc/sysconfig/elfstatsd` to help the launcher to locate the code. 
 
-## Configuration
+## Configure
 
 Elfstatsd can be configured using `settings.py` file in `elfstatsd` directory. This file contains all the settings supported by the daemon as well as documentation to them. Please refer to the file for more information.
 
@@ -85,7 +87,7 @@ If you face problems with the daemon, start troubleshooting with inspecting its 
 
 ## License
 
-Eelfstatsd is available under the terms of MIT License.
+Elfstatsd is available under the terms of MIT License.
 
 Copyright © 2013 [Źmicier Žaleźničenka][me] & Andriy Yakovlev.
 
