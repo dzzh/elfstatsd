@@ -6,15 +6,15 @@ An advantage of this tool over the other existing scripts and utilities for moni
 
 Daemon code is written in Python programming language and requires Python 2.6.x/2.7.x to run. Adding Python 2.4-3.x support is in plans.
 
-In order to display data aggregated by this daemon in Munin, a number of plugins for it are needed. These plugins are distributed separately and are available in [elfstats-munin](https://github.com/dzzh/elfstats-munin) repository. To simplify daemon's installation, you can check out [elfstats-env](https://github.com/dzzh/elfstats-env) repository containing environment setup for the daemon (RHEL6 OS is only supported so far by elfstats-env).
+In order to display data aggregated by this daemon in Munin, a number of plugins for it are needed. These plugins are distributed separately and are available in [elfstats-munin][] repository. To simplify daemon's installation, you can check out [elfstats-env][] repository containing environment setup for the daemon (RHEL6 OS is only supported so far by elfstats-env).
 
 ## Build and install
 
-Unfortunately, the installation procedure is a bit more complicated than usual for Python packages. This happens because elfstatsd is a Linux daemon requiring some more permissions than average Python package does. I did my best to simplify installation as much as possible, and you are welcome to share your thoughts on making it even simpler. However, if you install elfstatsd not from the sources, but from an RPM using [a provided environment](https://github.com/dzzh/elfstats-env), all you need to do is to install the packages with `yum`.
+Unfortunately, the installation procedure is a bit more complicated than usual for Python packages. This happens because elfstatsd is a Linux daemon requiring some more permissions than average Python package does. I did my best to simplify installation as much as possible, and you are welcome to share your thoughts on making it even simpler. However, if you install elfstatsd not from the sources, but from an RPM using [a provided environment][elfstats-env], all you need to do is to install the packages with `yum`.
 
 Elfstatsd is distributed via source code and RPM packages. It is planned to add elfstatsd to PyPi in future. RPM files for RHEL6_x64 can be found in [Releases](https://github.com/dzzh/elfstatsd/releases). Packaging scripts for other POSIX flavors are not yet implemented. Let me know if you are interested in having a package for your OS distribution. Also, if you need in a distribution in a different format, you can build elfstatsd from the sources as explained below.
 
-It is recommended, though not required, to setup [a virtual environment](http://www.virtualenv.org) for running this daemon. An RPM with such an environment set up and ready to go is maintained in [elfstats-env](https://github.com/dzzh/elfstats-env) repository. If the provided package does not suit you, you can use default Python installation or create a virtual environment yourself. Instructions to do so are provided below. 
+It is recommended, though not required, to setup [a virtual environment](http://www.virtualenv.org) for running this daemon. An RPM with such an environment set up and ready to go is maintained in [elfstats-env][] repository. If the provided package does not suit you, you can use default Python installation or create a virtual environment yourself. Instructions to do so are provided below. 
 
 ### Installing elfstatsd from source codes
 
@@ -34,11 +34,11 @@ It is recommended, though not required, to setup [a virtual environment](http://
 
 * Clone the repository: `git clone https://github.com/dzzh/elfstatsd.git` and enter it with `cd elfstatsd`.
 
-* If you want the resulting RPM to install elfstatsd to a virtual environment, you have to switch to it with `source /path/to/virtualenv/bin/activate`. To set up such an environment, you can install an RPM from [elfstats-env](https://github.com/dzzh/elfstats-env) repository. Pre-built RPMs for RHEL6 are available in its [Releases](https://github.com/dzzh/elfstats-env/releases).
+* If you want the resulting RPM to install elfstatsd to a virtual environment, you have to switch to it with `source /path/to/virtualenv/bin/activate`. To set up such an environment, you can install an RPM from [elfstats-env][] repository. Pre-built RPMs for RHEL6 are available in its [Releases](https://github.com/dzzh/elfstats-env/releases).
 
-* Build RPM: `python setup.py bdist_rpm`. After this step, an RPM will be put in `dist/` directory.
+* Build RPM: `python setup.py bdist_rpm`. After this step, the RPMs will be put in `dist/` directory.
 
-* Install rpm: `sudo yum install dist/elfstatsd-XX.XX.rpm`. This RPM can later be installed to the other machines without being re-built, but these machines should have virtual environment located at the same path as at the build machine or have to use default Python with installed dependencies. You can read about installing the dependencies in _Installing elfstatsd from source codes_ section.
+* Install rpm: `sudo yum install dist/elfstatsd-XX.XX.noarch.rpm`. This RPM can later be installed to the other machines without being re-built, but these machines should have virtual environment located at the same path as at the build machine or have to use default Python with installed dependencies. You can read about installing the dependencies in _Installing elfstatsd from source codes_ section.
 
 * If you work with a virtual environment or install elfstatsd to a location different for the default for Python packages, make necessary adjustments to `/etc/sysconfig/elfstatsd` to help the launcher to locate the code. 
 
@@ -79,7 +79,7 @@ Elfstatsd uses `py.test` as its testing framework. It is not defined as requirem
 
 ## Data visualization with Munin
 
-To show data aggregated with elfstatsd in Munin, a set of plugins parsing aggregated data and sending it to Munin are needed. These plugins can be installed from [elfstats-munin](https://github.com/dzzh/elfstats-munin) repository.
+To show data aggregated with elfstatsd in Munin, a set of plugins parsing aggregated data and sending it to Munin are needed. These plugins can be installed from [elfstats-munin][] repository.
 
 ## Troubleshooting
 
@@ -112,3 +112,5 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
 [me]: https://github.com/dzzh
+[elfstats-munin]: https://github.com/dzzh/elfstats-munin
+[elfstats-env]: https://github.com/dzzh/elfstats-env

@@ -41,7 +41,7 @@ setup(
     author='Zmicier Zaleznicenka',
     author_email='Zmicier.Zaleznicenka@gmail.com',
     license="MIT",
-    keywords="munin apache tomcat nginx elf access log",
+    keywords="munin apache tomcat nginx elf access log monitoring",
     url='https://github.com/dzzh/elfstatsd',
     cmdclass={'test': PyTest, 'install': CustomInstall},
     packages=['elfstatsd'],
@@ -52,7 +52,7 @@ setup(
     ],
     tests_require=['pytest'],
     provides=['elfstatsd'],
-    platforms=['Linux'],
+    platforms=['POSIX'],
     data_files=[
         ('/etc/init.d', ['scripts/etc/init.d/elfstatsd']),
         ('/etc/sysconfig', ['scripts/etc/sysconfig/elfstatsd']),
