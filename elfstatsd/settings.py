@@ -20,38 +20,53 @@ STALLED_CALL_THRESHOLD = 4000
 # If this setting is omitted for in-place rotating logs, some records in the end of file may be not processed by daemon.
 # The third element - path to a file where you want to store aggregated data.
 # Munin plugins should read and parse this file.
-DATA_FILES = [
-    ('/srv/log/httpd/apache.access.log-%Y-%m-%d-%H', '', '/tmp/elfstatsd-apache.data'),
-    ('/srv/log/httpd/tomcat.log', 'tomcat.1.log', '/tmp/elfstatsd-tomcat.data'),
-]
+#
+# Example:
+# DATA_FILES = [
+#     ('/srv/log/httpd/apache.access.log-%Y-%m-%d-%H', '', '/tmp/elfstatsd-apache.data'),
+#     ('/srv/log/httpd/tomcat.log', 'tomcat.1.log', '/tmp/elfstatsd-tomcat.data'),
+# ]
+DATA_FILES = []
 
 # List of regular expressions to be matched when parsing the request. Each expression should contain
 # 'method' named group and optionally 'group' named group that will be parsed and displayed in Munin.
 # Example: for '/content/service/call' req. that is checked against r'^/content/(?P<group>\w+)/(?P<method>\w+)[/?%&]',
 # you will get 'service' as group, 'call' as method name.
 # Methods without group are put into 'nogroup' group.
-# As soon as first match is found, matching process stops.
+# As soon as first match is found, matching stops.
+#
+# Example:
+# VALID_REQUESTS = [
+#     re.compile(r'^/content/(?P<group>[\w.]+)/(?P<method>[\w.]+)[/?%&]?'),
+#     re.compile(r'^/content/(?P<method>[\w.]+)[/?%&]?'),
+# ]
 VALID_REQUESTS = [
-    re.compile(r'^/content/(?P<group>[\w.]+)/(?P<method>[\w.]+)[/?%&]?'),
-    re.compile(r'^/content/(?P<method>[\w.]+)[/?%&]?'),
+    re.compile(r'^/(?P<group>[\w.]+)/(?P<method>[\w.]+)/[/?%&]?'),
+    re.compile(r'^/(?P<method>[\w.]+)/[/?%&]?'),
 ]
 
 # Requests matching at least one of regexes in this list are not reflected in statistics and logs.
 # Only requests that did not pass VALID_REQUESTS validation are tested here. If a request is considered
 # valid after getting through VALID_REQUESTS, it is never checked against this list.
-REQUESTS_TO_SKIP = [
-    re.compile(r'^/$'),
-    re.compile(r'^/skip'),
-]
+#
+# Example:
+# REQUESTS_TO_SKIP = [
+#   re.compile(r'^/$'),
+#   re.compile(r'^/skip'),
+# ]
+REQUESTS_TO_SKIP = []
 
 # Additional aggregation for valid requests for more flexibility.
 # After a request matches a regex in VALID_REQUESTS and is considered valid,
 # it gets through this list of regexes and if it matches any, its group and method name initially derived from URL
 # by VALID_REQUEST regex, are discarded and replaced with this values
 # Records are tuples in form (group, method, regex)
-REQUESTS_AGGREGATION = [
-    ('group', 'method', re.compile(r'/service/call/to/aggregate')),
-]
+#
+# Example:
+# REQUESTS_AGGREGATION = [
+#     ('group', 'method', re.compile(r'/service/call/to/aggregate')),
+#     ]
+REQUESTS_AGGREGATION = []
 
 # Symbols to be removed from method names (Munin cannot process them in field names)
 FORBIDDEN_SYMBOLS = re.compile(r'[.-]')
