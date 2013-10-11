@@ -30,9 +30,10 @@ class CustomInstall(InstallCommand):
     def run(self):
         # Call parent
         InstallCommand.run(self)
-        # Execute commands
-        #Disabled so far, has to be run manually
-        # call(['sh', 'scripts/post-install.sh'])
+        # We don't want to run post-install here if we package the module with bdist_rpm, thus this check
+        # to make sure we're not building an RPM (quite dirty, yes, but I didn't come to a better way)
+        if not self.record == 'INSTALLED_FILES':
+            call(['sh', 'scripts/post-install.sh'])
 
 setup(
     name='elfstatsd',

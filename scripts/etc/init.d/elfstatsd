@@ -19,7 +19,7 @@ if [ -f /etc/sysconfig/elfstatsd ]
         . /etc/sysconfig/elfstatsd
 fi
 
-ELFSTATSD_ARGS="-m elfstatsd"
+ELFSTATSD_ARGS='-m elfstatsd.__main__'
 
 if [ -z "${ELFSTATSD_VIRTUALENV_PATH+x}" ]
     then
@@ -40,16 +40,32 @@ case "$1" in
   start)
     # Start the daemon
     python ${ELFSTATSD_ARGS} start
-    echo "Elfstatsd started"
+    if [ $? -eq 0 ]
+    then
+        echo "Elfstatsd started"
+    else
+        echo "Elfstatsd was not able to start"
+    fi
     ;;
   stop)
     # Stop the daemon
-    python ${ELFSTATSD_ARGS} stop
-    echo "Elfstatsd stopped"
+    python ${ELFSTATSD_ARGS} stop > /dev/null 2>$1
+    if [ $? -eq 0 -o $? -eq 255 ]
+    then
+        echo "Elfstatsd stopped"
+    else
+        echo "Elfstatsd was not able to stop correctly"
+    fi
     ;;
   restart)
-    python ${ELFSTATSD_ARGS} restart
-    echo "Elfstatsd restarted"
+    python ${ELFSTATSD_ARGS} restart > /dev/null 2>$1
+    if [ $? -eq 0 -o $? -eq 255 ]
+    then
+        echo "Elfstatsd restarted"
+    else
+        echo "Elfstatsd was not able to restart correctly"
+        echo $?
+    fi
     ;;
   *)
     # Refuse to do other stuff
