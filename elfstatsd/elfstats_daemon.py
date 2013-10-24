@@ -42,11 +42,12 @@ class ElfStatsDaemon():
             logger.info('elfstatsd v%s invoked at %s' % (daemon_version, str(started)))
             try:
                 for current_log_file, previous_log_file, dump_file in settings.DATA_FILES:
-                    self._process_log(started, current_log_file, previous_log_file, dump_file)
+                    try:
+                        self._process_log(started, current_log_file, previous_log_file, dump_file)
+                    except BaseException as e:
+                        logger.exception('An error has occurred: %s' % e.message)
             except SystemExit:
                 raise
-            except BaseException as e:
-                logger.exception('An error has occurred: %s' % e.message)
             finally:
                 self.period_start = started
                 self._good_night(started)
