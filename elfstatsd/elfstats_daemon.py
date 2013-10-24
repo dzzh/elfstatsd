@@ -29,19 +29,20 @@ class ElfStatsDaemon():
         self.seek = {}
 
         #Storages for round statistics
-        self.method_stats = dict()
-        self.response_codes_stats = dict()
+        self.method_stats = {}
+        self.response_codes_stats = {}
+        self.metadata_stats = {}
+        self.record_stats = {}
 
     def run(self):
         """Main daemon code."""
 
         while True:
-            #noinspection PyBroadException
             started = datetime.datetime.now()
             logger.info('elfstatsd v%s invoked at %s' % (daemon_version, str(started)))
             try:
                 for current_log_file, previous_log_file, dump_file in settings.DATA_FILES:
-                    self._process_file(started, current_log_file, previous_log_file, dump_file)
+                    self._process_log(started, current_log_file, previous_log_file, dump_file)
             except SystemExit:
                 raise
             except BaseException as e:
@@ -63,7 +64,7 @@ class ElfStatsDaemon():
         if elapsed_seconds < settings.INTERVAL:
             time.sleep(settings.INTERVAL - int(elapsed_seconds) - float(elapsed_microseconds))
 
-    def _process_file(self, started, current_log_file, previous_log_file, dump_file):
+    def _process_log(self, started, current_log_file, previous_log_file, dump_file):
         """
         Read records from log_file starting at started and dump them to dump_file.
 
@@ -73,10 +74,10 @@ class ElfStatsDaemon():
         @param str dump_file: file to save aggregated data
         """
 
-        #create entries in dictionaries with aggregated data
-        if not dump_file in self.method_stats:
-            self.method_stats[dump_file] = dict()
-            self.response_codes_stats[dump_file] = dict()
+        self._reset_storages(dump_file)
+
+        self.metadata_stats[dump_file]['daemon_invoked'] = started.strftime("%Y-%m-%d %H:%M:%S")
+        self.metadata_stats[dump_file]['daemon_version'] = daemon_version
 
         #Generate file names from a template and timestamps
         file_at_period_start = utils.format_filename(current_log_file, self.period_start)
@@ -127,12 +128,11 @@ class ElfStatsDaemon():
 
     def _finalize_processing(self, dump_file):
         """
-        Perform final procedures after processing log files: write data to dump file and clean up storage
+        Perform finalizing procedures after processing log files.
         @param str dump_file: path to file for dumping aggregated data
         """
 
         self._dump_stats(dump_file)
-        self._cleanup(dump_file)
 
     def _parse_file(self, storage_key, file_path, read_from_start=False, read_to_time=None):
         """
@@ -146,10 +146,12 @@ class ElfStatsDaemon():
         @param datetime read_to_time: if set, records are parsed until their time is greater or equal of parameter value
         Otherwise the file is read till the end.
         """
+
         f = open(file_path, 'r')
 
         if read_from_start:
-            logger.debug('Reading file %s from the beginning to %s' % (file_path, read_to_time))
+            logger.debug('Reading file %s from the beginning to %s'
+                         % (file_path, read_to_time))
         else:
             logger.debug('Reading file %s from position %d to %s'
                          % (file_path, self.seek[file_path], read_to_time or 'the end'))
@@ -164,30 +166,72 @@ class ElfStatsDaemon():
         while True:
             current_seek = f.tell()
             line = f.readline()
+
             if not line:
                 #Reached end of file, record seek and stop
                 self.seek[file_path] = current_seek
                 logger.debug('Reached end of file %s, set seek in storage to %d' % (f.name, current_seek))
                 break
+
             record = utils.parse_line(line, log_parser, settings.LATENCY_IN_MILLISECONDS)
+
             if not record:
+                self._record_processed(storage_key, 'error')
                 continue
-            if read_to_time:
-                time = record.get_time()
-                if time is None:
-                    logger.error('Could not process time string: ' + record.time)
-                    logger.error('Line: ' + record.line)
-                    continue
-                if time >= read_to_time:
-                    #Reached a record with timestamp higher than end of current analysis period
-                    #Stop here and leave it for the next invocation.
-                    self.seek[file_path] = current_seek
-                    logger.debug('Reached end of period, set seek for %s in storage to %d' % (f.name, current_seek))
-                    break
-            if record:
-                self._process_record(storage_key, record)
+
+            record_time = record.get_time()
+            if record_time is None:
+                logger.error('Could not process time string: ' + record.time)
+                logger.error('Line: ' + record.line)
+                self._record_processed(storage_key, 'error')
+                continue
+            self._update_metadata_time(storage_key, record_time)
+
+            if read_to_time and record_time >= read_to_time:
+                #Reached a record with timestamp higher than end of current analysis period
+                #Stop here and leave it for the next invocation.
+                self.seek[file_path] = current_seek
+                logger.debug('Reached end of period, set seek for %s in storage to %d' % (f.name, current_seek))
+                break
+
+            status = self._process_record(storage_key, record)
+            self._record_processed(storage_key, status)
 
         f.close()
+
+    def _update_metadata_time(self, storage_key, time):
+        """
+        Update time-related metrics in metadata storage with given timestamp
+        @param str storage_key: a key to define statistics storage
+        @param str time: string representation of record time
+        """
+
+        if not 'first_record' in self.metadata_stats[storage_key] or \
+                not self.metadata_stats[storage_key]['first_record']:
+            self.metadata_stats[storage_key]['first_record'] = time
+        self.metadata_stats[storage_key]['last_record'] = time
+
+    def _record_processed(self, storage_key, status):
+        """
+        After the record is read and its status obtained, remember it in metadata storage
+        and increase total number of records
+        @param str storage_key: a key to define statistics storage
+        @param str status: status of a record to be stored
+        """
+
+        self._inc_record_counter(storage_key, 'total')
+        self._inc_record_counter(storage_key, status)
+
+    def _inc_record_counter(self, storage_key, status):
+        """
+        Update aggregation counter for the given storage key according to the provided status
+        @param str storage_key: a key to define statistics storage
+        @param str status: one of 'total', 'parsed', 'skipped', 'error'
+        """
+
+        if not status in self.record_stats[storage_key]:
+            self.record_stats[storage_key][status] = 0
+        self.record_stats[storage_key][status] += 1
 
     def _process_record(self, storage_key, record):
         """
@@ -195,18 +239,42 @@ class ElfStatsDaemon():
 
         @param str storage_key: a key to define statistics storage
         @param LogRecord record: record to process
+        @return str status: status of processed record
         """
 
-        method_name = record.get_method_name()
+        method_name, status = record.get_method_name()
         if method_name:
             self._add_call(storage_key, method_name, record.latency)
         self._add_response_code(storage_key, record.response_code)
+        return status
 
     def _dump_stats(self, file_path):
         """Dump statistics to DUMP_FILE in ConfigParser format."""
 
         storage_key = file_path
         dump = ConfigParser.RawConfigParser()
+        self._dump_metadata_and_records(dump, storage_key)
+        self._dump_methods(dump, storage_key)
+        self._dump_response_codes(dump, storage_key)
+
+        with open(file_path, 'wb') as f:
+            dump.write(f)
+
+    def _dump_metadata_and_records(self, dump, storage_key):
+        """Save values from metadata and record storages to dump file"""
+
+        storages = [('metadata', self.metadata_stats),
+                    ('records_count', self.record_stats)]
+
+        for storage in storages:
+            dump.add_section(storage[0])
+            for record_key in sorted(storage[1][storage_key].keys()):
+                value = storage[1][storage_key][record_key]
+                dump.set(storage[0], str(record_key), utils.format_value_for_munin(value))
+
+    def _dump_methods(self, dump, storage_key):
+        """Save values from methods storage to dump file"""
+
         for method in self.method_stats[storage_key].values():
             section = 'method_' + method.name
             dump.add_section(section)
@@ -219,31 +287,45 @@ class ElfStatsDaemon():
             dump.set(section, 'p90', utils.format_value_for_munin(method.percentile(0.90)))
             dump.set(section, 'p99', utils.format_value_for_munin(method.percentile(0.99)))
 
+    def _dump_response_codes(self, dump, storage_key):
+        """Save values from response codes storage to dump file"""
+
         section = 'response_codes'
         dump.add_section(section)
         for code, value in self.response_codes_stats[storage_key].iteritems():
             dump.set(section, str(code), utils.format_value_for_munin(value))
-            #Add response codes from settings with 0 value if they are not met in logs
+        #Add response codes from settings with 0 value if they are not found in logs
         #Is needed for Munin not to drop these codes from the charts
         for code in settings.RESPONSE_CODES:
             if not code in self.response_codes_stats[storage_key].keys():
                 dump.set(section, str(code), utils.format_value_for_munin(''))
 
-        with open(file_path, 'wb') as f:
-            dump.write(f)
-
-    def _cleanup(self, storage_key):
+    def _reset_storages(self, storage_key):
         """
-        Prepare values for the next round.
-        Save the method names and existed response codes to keep them in Munin output.
+        Prepare storages for the next round.
+        Save all necessary data to keep it in Munin output.
 
         @param str storage_key: a key to define statistics storage
         """
 
-        for method in self.method_stats[storage_key].values():
-            method.calls = []
-        for code in self.response_codes_stats[storage_key]:
-            self.response_codes_stats[storage_key][code] = 0
+        if storage_key in self.method_stats:
+            for method in self.method_stats[storage_key].values():
+                method.calls = []
+        else:
+            self.method_stats[storage_key] = {}
+
+        if storage_key in self.response_codes_stats:
+            for code in self.response_codes_stats[storage_key]:
+                self.response_codes_stats[storage_key][code] = 0
+        else:
+            self.response_codes_stats[storage_key] = {}
+
+        self.metadata_stats[storage_key] = {}
+
+        record_statuses = ['parsed', 'skipped', 'error', 'total']
+        self.record_stats[storage_key] = {}
+        for status in record_statuses:
+            self.record_stats[storage_key][status] = 0
 
     def _get_called_method_stats(self, storage_key, name):
         """

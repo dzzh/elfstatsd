@@ -53,7 +53,7 @@ class TestLogRecord():
         record = log_record.LogRecord()
         record.request = '/data/valid/request'
 
-        assert record.get_method_name() == 'valid_request'
+        assert record.get_method_name() == ('valid_request', 'parsed')
 
     def test_get_method_name_skipped(self, monkeypatch):
         log_record_setup(monkeypatch)
@@ -61,7 +61,7 @@ class TestLogRecord():
         record = log_record.LogRecord()
         record.request = '/skipped/request'
 
-        assert record.get_method_name() is None
+        assert record.get_method_name() == (None, 'skipped')
 
     def test_get_method_name_nogroup(self, monkeypatch):
         log_record_setup(monkeypatch)
@@ -69,7 +69,7 @@ class TestLogRecord():
         record = log_record.LogRecord()
         record.request = '/data/short'
 
-        assert record.get_method_name() == 'nogroup_short'
+        assert record.get_method_name() == ('nogroup_short', 'parsed')
 
     def test_get_method_name_forbidden_symbols(self, monkeypatch):
         log_record_setup(monkeypatch)
@@ -77,7 +77,7 @@ class TestLogRecord():
         record = log_record.LogRecord()
         record.request = '/data/xml.test.zip'
 
-        assert record.get_method_name() == 'nogroup_xmltestzip'
+        assert record.get_method_name() == ('nogroup_xmltestzip', 'parsed')
 
     def test_get_method_no_method_match(self, monkeypatch):
         log_record_setup(monkeypatch)
@@ -85,7 +85,7 @@ class TestLogRecord():
         record = log_record.LogRecord()
         record.request = '/data'
 
-        assert record.get_method_name() is None
+        assert record.get_method_name() == (None, 'error')
 
     def test_get_method_never_matches(self, monkeypatch):
         log_record_setup(monkeypatch)
@@ -93,7 +93,7 @@ class TestLogRecord():
         record = log_record.LogRecord()
         record.request = '/subtle/joe'
 
-        assert record.get_method_name() is None
+        assert record.get_method_name() == (None, 'error')
 
     def test_get_method_aggregate(self, monkeypatch):
         log_record_setup(monkeypatch)
@@ -101,4 +101,4 @@ class TestLogRecord():
         record = log_record.LogRecord()
         record.request = '/data/aggregate/me'
 
-        assert record.get_method_name() == 'newgroup_newmethod'
+        assert record.get_method_name() == ('newgroup_newmethod', 'parsed')

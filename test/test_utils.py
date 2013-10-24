@@ -1,4 +1,5 @@
 import datetime
+import re
 from elfstatsd import log_record, settings
 import pytest
 import apachelog
@@ -15,6 +16,12 @@ def utils_setup(monkeypatch):
     monkeypatch.setattr(settings, 'ELF_FORMAT',
                         r'%h %l %u %t \"%r\" %>s %B \"%{Referer}i\" \"%{User-Agent}i\" '
                         r'%{JK_LB_FIRST_NAME}n %{JK_LB_LAST_NAME}n %{JK_LB_LAST_STATE}n %I %O %D')
+    monkeypatch.setattr(settings, 'VALID_REQUESTS',
+                        [
+                            re.compile(r'^/data/(?P<group>[\w.]+)/(?P<method>[\w.]+)[/?%&]?'),
+                            re.compile(r'^/data/(?P<method>[\w.]+)[/?%&]?'),
+                            re.compile(r'^/data'),
+                        ])
     return monkeypatch
 
 
@@ -88,16 +95,16 @@ class TestParseLine():
     def test_valid(self, monkeypatch):
         utils_setup(monkeypatch)
 
-        line = u'172.19.0.40 - - [08/Aug/2013:10:59:59 +0200] "POST /content/csl/contentupdate/xxx HTTP/1.1" 200 8563 '\
+        line = u'172.19.0.40 - - [08/Aug/2013:10:59:59 +0200] "POST /data/csl/contentupdate/xxx HTTP/1.1" 200 8563 '\
                u'"-" "Apache-HttpClient/4.2.1 (java 1.5)" community1 community1 OK 14987 8785 53047'
         parser = apachelog.parser(settings.ELF_FORMAT)
         record = parse_line(line, parser)
 
-        assert record.request == '/content/csl/contentupdate/xxx'
+        assert record.request == '/data/csl/contentupdate/xxx'
         assert record.get_time() == datetime.datetime.strptime('20130808105959', log_record.APACHELOG_DATETIME_FORMAT)
         assert record.response_code == 200
         assert record.latency == 53
-        assert record.get_method_name() == 'csl_contentupdate'
+        assert record.get_method_name() == ('csl_contentupdate', 'parsed')
 
     def test_empty(self, monkeypatch):
         utils_setup(monkeypatch)

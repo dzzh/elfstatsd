@@ -28,19 +28,26 @@ class LogRecord():
         return dt
 
     def get_method_name(self):
-        """Return cleaned method name from a request string"""
-        group, method = self._parse_request()
-        if not group and not method:
-            return None
+        """
+        Return cleaned method name from a request string and parsing status
+        @return (name, status) where name is str or None, status is one of 'parsed', 'skipped', 'error'
+        """
+        group, method, status = self._parse_request()
+        if status != 'parsed':
+            return None, status
         elif not group:
             group = 'nogroup'
         name = group + '_' + method
-        print name
         valid_name = re.sub(settings.FORBIDDEN_SYMBOLS, '', name)
-        return valid_name
+        return valid_name, status
 
     def _match_against_regexes(self, regexes):
-        """Determine whether a record is in proper form for processing"""
+        """
+        Try to match request against given regexes and return matched object if match is found
+        @param [] regexes: list of compiled regexes to validate against
+        @return MatchObject or None
+        """
+
         for regex in regexes:
             search = regex.search(self.request)
             if search:
@@ -48,13 +55,16 @@ class LogRecord():
         return None
 
     def _aggregate_request(self):
-        """Try to match request against aggregation rules in settings
-           and return its group and method if match is found
         """
+        Try to match request against aggregation rules in settings
+        and return its group and method if match is found. Otherwise return (None, None)
+        @return (group, method)
+        """
+
         aggregation_rules = settings.REQUESTS_AGGREGATION
         for group, method, regex in aggregation_rules:
             if self._match_against_regexes([regex]):
-                return group, method
+                return str(group), str(method)
         return None, None
 
     def _parse_request(self):
@@ -64,8 +74,12 @@ class LogRecord():
         and maybe substituted by REQUESTS_AGGREGATION setting.
         If a request is not valid and does not match by REQUESTS_TO_SKIP,
         it is reported in logs as invalid.
+        @return (group, method, status) where group and method are either strings or None,
+        status is one of 'parsed', 'skipped', 'error'
         """
+
         match = self._match_against_regexes(settings.VALID_REQUESTS)
+
         if match:
             group, method = self._aggregate_request()
             if not group and not method:
@@ -76,10 +90,15 @@ class LogRecord():
                 try:
                     method = match.group('method')
                 except IndexError:
-                    method = None
-            return group, method
+                    # method should always be presented in valid requests
+                    logger.info('Method name not parsed: %s' % self.request)
+                    return None, None, 'error'
+            return group, method, 'parsed'
+
         else:
+            status = 'skipped'
             match = self._match_against_regexes(settings.REQUESTS_TO_SKIP)
             if not match:
                 logger.info('Request not parsed: %s' % self.request)
-            return None, None
+                status = 'error'
+            return None, None, status

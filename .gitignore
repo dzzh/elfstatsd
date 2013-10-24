@@ -12,6 +12,7 @@
 #Generated files
 build/
 dist/
+*.egg/
 MANIFEST
 coverage.xml
 .coverage
