@@ -244,9 +244,10 @@ class ElfStatsDaemon():
         """
 
         method_name, status = record.get_method_name()
-        if method_name:
-            self._add_call(storage_key, method_name, record.latency)
-        self._add_response_code(storage_key, record.response_code)
+        if status == 'parsed':
+            self._add_call(storage_key, method_name, record)
+
+        utils.inc_counter(self.response_codes_stats[storage_key], record.response_code)
         return status
 
     def _dump_stats(self, file_path):
@@ -288,6 +289,9 @@ class ElfStatsDaemon():
             dump.set(section, 'p90', utils.format_value_for_munin(method.percentile(0.90)))
             dump.set(section, 'p99', utils.format_value_for_munin(method.percentile(0.99)))
 
+            for code in sorted(method.response_codes.keys()):
+                dump.set(section, 'rc' + str(code), utils.format_value_for_munin(method.response_codes[code]))
+
     def _dump_response_codes(self, dump, storage_key):
         """Save values from response codes storage to dump file"""
 
@@ -312,6 +316,8 @@ class ElfStatsDaemon():
         if storage_key in self.method_stats:
             for method in self.method_stats[storage_key].values():
                 method.calls = []
+                for code in method.response_codes:
+                    method.response_codes[code] = 0
         else:
             self.method_stats[storage_key] = {}
 
@@ -344,26 +350,14 @@ class ElfStatsDaemon():
             self.method_stats[storage_key][name] = method
             return method
 
-    def _add_call(self, storage_key, name, latency):
-        """Add latency of a given call to the storage.
+    def _add_call(self, storage_key, name, record):
+        """Add latency of a given call and its response code to the method's storage.
 
         @param str storage_key: a key to define statistics storage
         @param str name: call name
-        @param int latency: call latency
+        @param LogRecord record: parsed record
         """
 
         method = self._get_called_method_stats(storage_key, name)
-        bisect.insort(method.calls, latency)
-
-    def _add_response_code(self, storage_key, code):
-        """
-        Remember response code in the storage.
-
-        @param str storage_key: a key to define statistics storage
-        @param int code: response code
-        """
-
-        if code in self.response_codes_stats[storage_key]:
-            self.response_codes_stats[storage_key][code] += 1
-        else:
-            self.response_codes_stats[storage_key][code] = 1
+        bisect.insort(method.calls, record.latency)
+        utils.inc_counter(method.response_codes, record.response_code)

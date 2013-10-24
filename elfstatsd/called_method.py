@@ -6,7 +6,8 @@ class CalledMethod():
 
     def __init__(self, name):
         self.name = name
-        self.calls = list()
+        self.calls = []
+        self.response_codes = {}
 
     @property
     def num_calls(self):

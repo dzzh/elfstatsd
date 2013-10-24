@@ -3,8 +3,8 @@ import re
 from elfstatsd import log_record, settings
 import pytest
 import apachelog
-from elfstatsd.utils import parse_latency, MILLISECOND_EXPONENT, MICROSECOND_EXPONENT, SECOND_EXPONENT
-from elfstatsd.utils import NANOSECOND_EXPONENT, parse_line, format_value_for_munin, format_filename
+from elfstatsd.utils import MILLISECOND_EXPONENT, MICROSECOND_EXPONENT, SECOND_EXPONENT, NANOSECOND_EXPONENT
+from elfstatsd.utils import parse_line, format_value_for_munin, format_filename, inc_counter, parse_latency
 
 
 @pytest.fixture(scope='function')
@@ -195,3 +195,15 @@ class TestFormatFilename():
     def test_format_filename_with_template(self):
         dt = datetime.datetime.now()
         assert format_filename('file.log', dt) == 'file.log'
+
+
+class TestIncCounter():
+    def test_counter_empty(self):
+        storage = {}
+        inc_counter(storage, 'test')
+        assert storage['test'] == 1
+
+    def test_counter_nonempty(self):
+        storage = {'test': 10}
+        inc_counter(storage, 'test')
+        assert storage['test'] == 11

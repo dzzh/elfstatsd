@@ -91,3 +91,11 @@ def format_value_for_munin(value, zero_allowed=False):
 def format_filename(name, dt):
     """Generate file name from a template containing formatted string and time value"""
     return dt.strftime(name)
+
+
+def inc_counter(storage, key):
+    """ Increase value of a counter for given key in given hashable storage or set it to 1 if it is missing """
+    if key in storage:
+        storage[key] += 1
+    else:
+        storage[key] = 1
