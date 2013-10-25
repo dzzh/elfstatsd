@@ -17,13 +17,13 @@ class CalledMethod():
         """
         Compute percentile of values in an array.
 
-        @param float percent: percent from 0.0 to 1.0
+        @param int percent: percent from 0 to 100
         @return int: percent or 0 if no values are found
         """
         if not len(self.calls):
             return 0
 
-        k = (len(self.calls)-1) * percent
+        k = (len(self.calls)-1) * percent / 100.0
         f = math.floor(k)
         c = math.ceil(k)
         if f == c:

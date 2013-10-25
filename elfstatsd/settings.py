@@ -79,6 +79,9 @@ RESPONSE_CODES = [200, 404, 500]
 # resolution is used. If set to False, microseconds are assumed, otherwise milliseconds.
 LATENCY_IN_MILLISECONDS = False
 
+#List of percentiles to be calculated for the requests' latencies. A list of int entries with values between 0 and 100.
+LATENCY_PERCENTILES = [50, 90, 99]
+
 #
 # Settings for internal logging
 #

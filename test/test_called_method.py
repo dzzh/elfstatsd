@@ -22,21 +22,21 @@ class TestCalledMethod():
         assert CalledMethod('method').num_calls == 0
 
     def test_percentile_25(self):
-        assert called_method().percentile(0.25) == 30
+        assert called_method().percentile(25) == 30
 
     def test_percentile_50(self):
-        assert called_method().percentile(0.5) == 50
+        assert called_method().percentile(50) == 50
 
     def test_percentile_50_2(self):
         method = called_method()
         method.calls.append(100)
-        assert method.percentile(0.5) == 55
+        assert method.percentile(50) == 55
 
     def test_percentile_75(self):
-        assert called_method().percentile(0.75) == 70
+        assert called_method().percentile(75) == 70
 
     def test_percentile_empty(self):
-        assert CalledMethod('method').percentile(0.5) == 0
+        assert CalledMethod('method').percentile(50) == 0
 
     def test_stalled(self, monkeypatch):
         monkeypatch.setattr(settings, 'STALLED_CALL_THRESHOLD', 69)

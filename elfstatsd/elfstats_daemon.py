@@ -277,6 +277,8 @@ class ElfStatsDaemon():
     def _dump_methods(self, dump, storage_key):
         """Save values from methods storage to dump file"""
 
+        percentiles = sorted([p for p in settings.LATENCY_PERCENTILES if type(p) == int and 0 <= p <= 100])
+
         for method in self.method_stats[storage_key].values():
             section = 'method_' + method.name
             dump.add_section(section)
@@ -285,9 +287,8 @@ class ElfStatsDaemon():
             dump.set(section, 'shortest', utils.format_value_for_munin(method.min))
             dump.set(section, 'longest', utils.format_value_for_munin(method.max))
             dump.set(section, 'average', utils.format_value_for_munin(method.avg))
-            dump.set(section, 'p50', utils.format_value_for_munin(method.percentile(0.50)))
-            dump.set(section, 'p90', utils.format_value_for_munin(method.percentile(0.90)))
-            dump.set(section, 'p99', utils.format_value_for_munin(method.percentile(0.99)))
+            for p in percentiles:
+                dump.set(section, 'p' + str(p), utils.format_value_for_munin(method.percentile(p)))
 
             for code in sorted(method.response_codes.keys()):
                 dump.set(section, 'rc' + str(code), utils.format_value_for_munin(method.response_codes[code]))
