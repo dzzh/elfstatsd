@@ -1,5 +1,6 @@
 import math
 import settings
+from storage.storage import ResponseCodesStorage
 
 
 class CalledMethod():
@@ -7,7 +8,7 @@ class CalledMethod():
     def __init__(self, name):
         self.name = name
         self.calls = []
-        self.response_codes = {}
+        self.response_codes = ResponseCodesStorage()
 
     @property
     def num_calls(self):

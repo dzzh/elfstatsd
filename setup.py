@@ -1,7 +1,7 @@
 from ez_setup import use_setuptools
 use_setuptools()
 
-from setuptools import setup
+from setuptools import setup, find_packages
 from setuptools.command.test import test as TestCommand
 from setuptools.command.install import install as InstallCommand
 from subprocess import call
@@ -45,7 +45,7 @@ setup(
     keywords="munin apache tomcat nginx elf access log monitoring",
     url='https://github.com/dzzh/elfstatsd',
     cmdclass={'test': PyTest, 'install': CustomInstall},
-    packages=['elfstatsd'],
+    packages=find_packages(),
     install_requires=[
         'python-daemon>=1.6',
         'lockfile>=0.9',
