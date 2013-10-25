@@ -12,7 +12,7 @@ def get_seek(file_path, period_start):
 
     f = open(file_path, 'r')
 
-    log_parser = apachelog.parser(settings.ELF_FORMAT)
+    log_parser = apachelog.parser(getattr(settings, 'ELF_FORMAT', ''))
     size = os.stat(file_path).st_size
     logger.debug('Running get_seek() for file %s' % f.name)
     approximate_seek = _find_approximate_seek_before_period_by_moving_back(f, size, log_parser, period_start)

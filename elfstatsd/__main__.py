@@ -15,7 +15,7 @@ import settings
 class FormatterWithLongerTraceback(logging.Formatter):
     def formatException(self, ei):
         sio = cStringIO.StringIO()
-        traceback.print_exception(ei[0], ei[1], ei[2], settings.TRACEBACK_LENGTH, sio)
+        traceback.print_exception(ei[0], ei[1], ei[2], getattr(settings, 'TRACEBACK_LENGTH', 5), sio)
         s = sio.getvalue()
         sio.close()
         if s[-1:] == "\n":
@@ -25,10 +25,11 @@ class FormatterWithLongerTraceback(logging.Formatter):
 
 daemon = ElfStatsDaemon()
 logger = logging.getLogger("elfstatsd")
-logger.setLevel(settings.LOGGING_LEVEL)
+logger.setLevel(getattr(settings, 'LOGGING_LEVEL', logging.INFO))
 formatter = FormatterWithLongerTraceback("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-handler = RotatingFileHandler(os.path.join(settings.DAEMON_LOG_DIR, 'elfstatsd.log'),
-                              maxBytes=settings.MAX_LOG_FILE_SIZE, backupCount=settings.MAX_LOG_FILES)
+handler = RotatingFileHandler(os.path.join(getattr(settings, 'DAEMON_LOG_DIR', '/var/log/elfstatsd'), 'elfstatsd.log'),
+                              maxBytes=getattr(settings, 'MAX_LOG_FILE_SIZE', 10000000),
+                              backupCount=getattr(settings, 'MAX_LOG_FILES', 5))
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 

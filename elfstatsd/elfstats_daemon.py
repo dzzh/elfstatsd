@@ -19,11 +19,12 @@ class ElfStatsDaemon():
         self.stdin_path = '/dev/null'
         self.stdout_path = '/dev/null'
         self.stderr_path = '/dev/null'
-        self.pidfile_path = os.path.join(settings.DAEMON_PID_DIR, 'elfstatsd.pid')
+        self.pidfile_path = os.path.join(getattr(settings, 'DAEMON_PID_DIR', '/var/run/elfstatsd'), 'elfstatsd.pid')
         self.pidfile_timeout = 5
 
         #Beginning of the analysis period
-        self.period_start = datetime.datetime.now() + datetime.timedelta(seconds=-settings.INTERVAL)
+        self.interval = getattr(settings, 'INTERVAL', 300)
+        self.period_start = datetime.datetime.now() + datetime.timedelta(seconds=-self.interval)
 
         #Position in the file to start reading
         self.seek = {}
@@ -40,8 +41,9 @@ class ElfStatsDaemon():
         while True:
             started = datetime.datetime.now()
             logger.info('elfstatsd v%s invoked at %s' % (daemon_version, str(started)))
+            data_files = getattr(settings, 'DATA_FILES', [])
             try:
-                for current_log_file, previous_log_file, dump_file in settings.DATA_FILES:
+                for current_log_file, previous_log_file, dump_file in data_files:
                     try:
                         self._process_log(started, current_log_file, previous_log_file, dump_file)
                     except BaseException as e:
@@ -62,8 +64,8 @@ class ElfStatsDaemon():
         elapsed_seconds = (finished - started).seconds
         elapsed_microseconds = (finished - started).microseconds
         elapsed_microseconds /= 1000000.0
-        if elapsed_seconds < settings.INTERVAL:
-            time.sleep(settings.INTERVAL - int(elapsed_seconds) - float(elapsed_microseconds))
+        if elapsed_seconds < self.interval:
+            time.sleep(self.interval - int(elapsed_seconds) - float(elapsed_microseconds))
 
     def _process_log(self, started, current_log_file, previous_log_file, dump_file):
         """
@@ -162,7 +164,7 @@ class ElfStatsDaemon():
             logger.debug('Setting seek for file %s to %d based on a value from the storage'
                          % (f.name, self.seek[file_path]))
 
-        log_parser = apachelog.parser(settings.ELF_FORMAT)
+        log_parser = apachelog.parser(getattr(settings, 'ELF_FORMAT', ''))
 
         while True:
             current_seek = f.tell()
@@ -174,7 +176,7 @@ class ElfStatsDaemon():
                 logger.debug('Reached end of file %s, set seek in storage to %d' % (f.name, current_seek))
                 break
 
-            record = utils.parse_line(line, log_parser, settings.LATENCY_IN_MILLISECONDS)
+            record = utils.parse_line(line, log_parser, getattr(settings, 'LATENCY_IN_MILLISECONDS', False))
 
             if not record:
                 self._record_processed(storage_key, 'error')
@@ -277,7 +279,8 @@ class ElfStatsDaemon():
     def _dump_methods(self, dump, storage_key):
         """Save values from methods storage to dump file"""
 
-        percentiles = sorted([p for p in settings.LATENCY_PERCENTILES if type(p) == int and 0 <= p <= 100])
+        raw_percentiles = getattr(settings, 'LATENCY_PERCENTILES', [])
+        percentiles = sorted([p for p in raw_percentiles if type(p) == int and 0 <= p <= 100])
 
         for method in self.method_stats[storage_key].values():
             section = 'method_' + method.name
@@ -302,7 +305,7 @@ class ElfStatsDaemon():
             dump.set(section, str(code), utils.format_value_for_munin(value))
         #Add response codes from settings with 0 value if they are not found in logs
         #Is needed for Munin not to drop these codes from the charts
-        for code in settings.RESPONSE_CODES:
+        for code in getattr(settings, 'RESPONSE_CODES', []):
             if not code in self.response_codes_stats[storage_key].keys():
                 dump.set(section, str(code), utils.format_value_for_munin(''))
 

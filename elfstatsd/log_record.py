@@ -38,7 +38,7 @@ class LogRecord():
         elif not group:
             group = 'nogroup'
         name = group + '_' + method
-        valid_name = re.sub(settings.FORBIDDEN_SYMBOLS, '', name)
+        valid_name = re.sub(getattr(settings, 'FORBIDDEN_SYMBOLS', ''), '', name)
         return valid_name, status
 
     def _match_against_regexes(self, regexes):
@@ -61,7 +61,7 @@ class LogRecord():
         @return (group, method)
         """
 
-        aggregation_rules = settings.REQUESTS_AGGREGATION
+        aggregation_rules = getattr(settings, 'REQUESTS_AGGREGATION', [])
         for group, method, regex in aggregation_rules:
             if self._match_against_regexes([regex]):
                 return str(group), str(method)
@@ -78,7 +78,7 @@ class LogRecord():
         status is one of 'parsed', 'skipped', 'error'
         """
 
-        match = self._match_against_regexes(settings.VALID_REQUESTS)
+        match = self._match_against_regexes(getattr(settings, 'VALID_REQUESTS', []))
 
         if match:
             group, method = self._aggregate_request()
@@ -97,7 +97,7 @@ class LogRecord():
 
         else:
             status = 'skipped'
-            match = self._match_against_regexes(settings.REQUESTS_TO_SKIP)
+            match = self._match_against_regexes(getattr(settings, 'REQUESTS_TO_SKIP', []))
             if not match:
                 logger.info('Request not parsed: %s' % self.request)
                 status = 'error'

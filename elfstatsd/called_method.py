@@ -40,7 +40,7 @@ class CalledMethod():
         """
         Return number of stalled calls
         """
-        return len([i for i in self.calls if i > settings.STALLED_CALL_THRESHOLD])
+        return len([i for i in self.calls if i > getattr(settings, 'STALLED_CALL_THRESHOLD', 100000)])
 
     @property
     def min(self):
