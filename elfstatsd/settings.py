@@ -64,7 +64,7 @@ REQUESTS_TO_SKIP = []
 #
 # Example:
 # REQUESTS_AGGREGATION = [
-#     ('group', 'method', re.compile(r'/service/call/to/aggregate')),
+#     ('group', 'method', re.compile(r'^/service/call/to/aggregate')),
 #     ]
 REQUESTS_AGGREGATION = []
 
