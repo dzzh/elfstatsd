@@ -100,11 +100,11 @@ class TestParseLine():
         parser = apachelog.parser(settings.ELF_FORMAT)
         record = parse_line(line, parser)
 
-        assert record.request == '/data/csl/contentupdate/xxx'
+        assert record.raw_request == '/data/csl/contentupdate/xxx'
         assert record.get_time() == datetime.datetime.strptime('20130808105959', log_record.APACHELOG_DATETIME_FORMAT)
         assert record.response_code == 200
         assert record.latency == 53
-        assert record.get_method_name() == ('csl_contentupdate', 'parsed')
+        assert record.get_method_id() == 'csl_contentupdate'
 
     def test_empty(self, monkeypatch):
         utils_setup(monkeypatch)

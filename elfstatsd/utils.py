@@ -63,7 +63,7 @@ def parse_line(line, log_parser, latency_in_millis=False):
 
     request = data['%r']
     if len(request) > 1:
-        record.request = request.split(' ')[1]
+        record.raw_request = request.split(' ')[1]
     else:
         logger.warn('Parser was not able to parse the request %s: ' % request)
         logger.warn('Record with error: %s' % line)
@@ -85,6 +85,12 @@ def parse_line(line, log_parser, latency_in_millis=False):
 
 
 def format_value_for_munin(value, zero_allowed=False):
+    """
+    Convert value into a format that will be understood by Munin
+    @param value: value to write
+    @param boolean zero_allowed: if True, 0 will be reported as 0, otherwise as unknown ('U')
+    @return value
+    """
     return value if value or (zero_allowed and value == 0) else 'U'
 
 

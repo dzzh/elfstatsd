@@ -1,4 +1,5 @@
 from abc import ABCMeta, abstractmethod
+from collections import defaultdict, Counter
 from elfstatsd import utils, settings
 
 
@@ -8,88 +9,110 @@ class Storage():
     __metaclass__ = ABCMeta
 
     def __init__(self, name):
-        self.storage = {}
         self.name = name
 
-    def set(self, storage_key, key, value):
+        # Basic storage structure - dict of dicts, with the first-level dict responsible for
+        # storing data related to different access log files, and the second-level dict
+        # storing key-value pairs we're interested in.
+        self._storage = defaultdict(dict)
+
+    def get(self, storage_key, record_key):
         """
-        Set a value of specified key in storage determined by storage_key
-        @param str storage_key: a key to define statistics storage
-        @param str key: key of a record to set
+        Get value of a given counter_key associated with given storage_key. Create storage_key if missing.
+        @param str storage_key: access log-related key to define statistics storage
+        @param str record_key: record-related key
+        @return value
+        @raise KeyError if record_key is not found by storage_key
+        """
+        return self._storage[storage_key][record_key]
+
+    def set(self, storage_key, record_key, value):
+        """
+        Set a value of specified key in storage determined by storage_key. Create storage_key if missing.
+        @param str storage_key: access log-related key to define statistics storage
+        @param str record_key: record-related key
         @param value: value to set
         """
-        if not storage_key in self.storage:
-            self.storage[storage_key] = {}
-        self.storage[storage_key][key] = value
-
-    def inc_counter(self, storage_key, counter_key):
-        """
-        Update aggregation counter for the given key in storage determined by storage key
-        @param str storage_key: a key to define statistics storage
-        @param str counter_key: key for the counter to increase
-        """
-        if not storage_key in self.storage or not counter_key in self.storage[storage_key]:
-            self.set(storage_key, counter_key, 0)
-        self.storage[storage_key][counter_key] += 1
+        self._storage[storage_key][record_key] = value
 
     @abstractmethod
     def reset(self, storage_key):
         """
         Properly reset the storage and prepare it for the next round
-        @param str storage_key: a key to define statistics storage
+        @param str storage_key: access log-related key to define statistics storage
         """
-        self.storage[storage_key] = {}
+        self._storage[storage_key] = {}
 
     @abstractmethod
     def dump(self, storage_key, parser):
         """
-        Add storage data to ConfigParser instance
-        @param str storage_key: a key to define statistics storage
-        @param ConfigParser parser: instance of ConfigParser to store the data
+        Dump storage data defined by the storage_key to RawConfigParser instance
+        @param str storage_key: access log-related key to define statistics storage
+        @param RawConfigParser parser: instance of ConfigParser to store the data
         """
         section = self.name
         if not parser.has_section(section):
             parser.add_section(section)
-        for record_key in sorted(self.storage[storage_key].keys()):
-            value = self.storage[storage_key][record_key]
+
+        for record_key in sorted(self._storage[storage_key].keys()):
+            value = self.get(storage_key, record_key)
             parser.set(section, str(record_key), utils.format_value_for_munin(value))
 
 
+class CounterStorage(Storage):
+    """Abstract class representing a storage for incrementing counters"""
+
+    def __init__(self, name):
+        super(CounterStorage, self).__init__(name)
+
+        # Storage structure - dict of Counters, with the first-level dict responsible for
+        # storing data related to different access log files, and the second-level dict
+        # being a Counter storing key-value pairs with values being incrementing integers
+        self._storage = defaultdict(Counter)
+
+    def inc_counter(self, storage_key, record_key):
+        """
+        Increment the counter for the given key in storage determined by storage key. Create storage_key if missing.
+        @param str storage_key: access log-related key to define statistics storage
+        @param str record_key: record-related key. If the value for this key is missing, it will be set to 1.
+        """
+        self._storage[storage_key][record_key] += 1
+
+    @abstractmethod
+    def reset(self, storage_key):
+        """
+        Properly reset the storage and prepare it for the next round. Save all the keys, but reset the values.
+        @param str storage_key: access log-related key to define statistics storage
+        """
+        for record_key in self._storage[storage_key].keys():
+            self._storage[storage_key][record_key] = 0
+
+
 class MetadataStorage(Storage):
-    """Storage for metadata values, like daemon's version and starting time"""
+    """Simple storage for metadata values, like daemon's version and starting time"""
 
     def __init__(self):
         super(MetadataStorage, self).__init__('metadata')
 
     def reset(self, storage_key):
-        """
-        Properly reset the storage and prepare it for the next round
-        @param str storage_key: a key to define statistics storage
-        """
         super(MetadataStorage, self).reset(storage_key)
 
     def dump(self, storage_key, parser):
-        """
-        Add storage data to ConfigParser instance
-        @param str storage_key: a key to define statistics storage
-        @param ConfigParser parser: instance of ConfigParser to store the data
-        """
         super(MetadataStorage, self).dump(storage_key, parser)
 
     def update_time(self, storage_key, time):
         """
-        Update time-related metrics with given timestamp
-        @param str storage_key: a key to define statistics storage
+        Update time-related metrics (first and last record) with given timestamp
+        @param str storage_key: access log-related key to define statistics storage
         @param str time: string representation of record time
         """
+        if not 'first_record' in self._storage[storage_key] or \
+                not self._storage[storage_key]['first_record']:
+            self._storage[storage_key]['first_record'] = time
+        self._storage[storage_key]['last_record'] = time
 
-        if not 'first_record' in self.storage[storage_key] or \
-                not self.storage[storage_key]['first_record']:
-            self.storage[storage_key]['first_record'] = time
-        self.storage[storage_key]['last_record'] = time
 
-
-class RecordsStorage(Storage):
+class RecordsStorage(CounterStorage):
     """Storage for records counters, like the number of parsed and skipped records"""
 
     def __init__(self):
@@ -97,25 +120,16 @@ class RecordsStorage(Storage):
         self.record_statuses = ['parsed', 'skipped', 'error', 'total']
 
     def reset(self, storage_key):
-        """
-        Properly reset the storage and prepare it for the next round
-        @param str storage_key: a key to define statistics storage
-        """
         super(RecordsStorage, self).reset(storage_key)
 
         for status in self.record_statuses:
-            self.storage[storage_key][status] = 0
+            self._storage[storage_key][status] = 0
 
     def dump(self, storage_key, parser):
-        """
-        Add storage data to ConfigParser instance
-        @param str storage_key: a key to define statistics storage
-        @param ConfigParser parser: instance of ConfigParser to store the data
-        """
         super(RecordsStorage, self).dump(storage_key, parser)
 
 
-class ResponseCodesStorage(Storage):
+class ResponseCodesStorage(CounterStorage):
     """Storage for response codes distribution"""
 
     def __init__(self):
@@ -123,39 +137,68 @@ class ResponseCodesStorage(Storage):
         self.permanent_codes = getattr(settings, 'RESPONSE_CODES', [])
 
     def reset(self, storage_key):
-        """
-        Properly reset the storage and prepare it for the next round
-        @param str storage_key: a key to define statistics storage
-        """
-        if storage_key in self.storage:
-            for code in self.storage[storage_key]:
-                self.storage[storage_key][code] = 0
-        else:
-            self.storage[storage_key] = {}
+        super(ResponseCodesStorage, self).reset(storage_key)
+
+        for code in self.permanent_codes:
+            self.set(storage_key, code, 0)
 
     def dump(self, storage_key, parser):
-        """
-        Add storage data to ConfigParser instance
-        @param str storage_key: a key to define statistics storage
-        @param ConfigParser parser: instance of ConfigParser to store the data
-        """
         self.flexible_dump(storage_key, parser, self.name)
 
     def flexible_dump(self, storage_key, parser, section, prefix='rc'):
         """
-        Add storage data to ConfigParser instance
-        @param str storage_key: a key to define statistics storage
-        @param ConfigParser parser: instance of ConfigParser to store the data
+        Dump storage data defined by the storage_key to RawConfigParser instance
+        @param str storage_key: access log-related key to define statistics storage
+        @param RawConfigParser parser: instance of RawConfigParser to store the data
         @param str section: name of section to write data
         @param str prefix: prefix to be added to response code
         """
         if not parser.has_section(section):
             parser.add_section(section)
-        for code in sorted(self.storage[storage_key].keys()):
-            parser.set(section, prefix+str(code), utils.format_value_for_munin(self.storage[storage_key][code]))
+        for code in sorted(self._storage[storage_key].keys()):
+            parser.set(section, prefix+str(code), utils.format_value_for_munin(self._storage[storage_key][code]))
 
-        #Add response codes from settings with 0 value if they are not found in logs
-        #Is needed for Munin not to drop these codes from the charts
-        for code in sorted(self.permanent_codes):
-            if not code in self.storage[storage_key].keys():
-                parser.set(section, prefix+str(code), utils.format_value_for_munin(''))
+
+class PatternsMatchesStorage(Storage):
+    """Storage for additional patterns found in the requests"""
+
+    def __init__(self):
+        super(PatternsMatchesStorage, self).__init__('patterns')
+
+        # Storage structure - dict of dicts of Counters, with the first-level dict responsible for
+        # storing data related to different access log files, the second-level dict
+        # responsible for storing data per pattern found in settings.PATTERNS_TO_EXTRACT and
+        # the third-level Counter storing key-value pairs with values being incrementing integers
+        # for the specific occurrences of the values extracted using the pattern.
+        self._storage = defaultdict(lambda: defaultdict(Counter))
+
+    def set(self, storage_key, record_key, value):
+        """
+        Increment match counter found in specific pattern defined by record_key
+        from specific access log defined by storage_key. If storage_key or record_key are not found, they
+        are created automatically. If value is not found, it is set to 1.
+        @param str storage_key: access log-related key to define statistics storage
+        @param record_key: identifier of a matched pattern
+        @param str value: value of a matched pattern
+        """
+        self._storage[storage_key][record_key][value] += 1
+
+    def reset(self, storage_key):
+        self._storage[storage_key] = defaultdict(Counter)
+
+    def dump(self, storage_key, parser):
+        """
+        For each pattern existing in given access log file defined by storage_key, dump two values:
+         `pattern.total` with total number of pattern matches, and `pattern.distinct` with total number
+          of different matches.
+        @param str storage_key: access log-related key to define statistics storage
+        @param RawConfigParser parser: instance of RawConfigParser to store the data
+        """
+        section = self.name
+        if not parser.has_section(section):
+            parser.add_section(section)
+        for record_key in sorted(self._storage[storage_key].keys()):
+            total = sum([value for value in self.get(storage_key, record_key).values()])
+            parser.set(section, str(record_key)+'.total', utils.format_value_for_munin(total))
+            distinct = len(self._storage[storage_key][record_key])
+            parser.set(section, str(record_key)+'.distinct', utils.format_value_for_munin(distinct))

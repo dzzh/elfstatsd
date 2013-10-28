@@ -201,15 +201,16 @@ class ElfStatsDaemon():
         """
         Update statistics storages with values of a current record.
 
-        @param str storage_key: a key to define statistics storage
+        @param str storage_key: access log-related key to define statistics storage
         @param LogRecord record: record to process
         @return str status: status of processed record
         """
-
-        method_name, status = record.get_method_name()
-        if status == 'parsed':
-            self.sm.get('methods').set(storage_key, method_name, record)
+        request = record.get_processed_request()
+        if request.status == 'parsed':
+            self.sm.get('methods').set(storage_key, request.get_method_id(), record)
+            for key in sorted(request.patterns.keys()):
+                self.sm.get('patterns').set(storage_key, key, request.patterns[key])
 
         self.sm.get('response_codes').inc_counter(storage_key, record.response_code)
         self.sm.get('metadata').update_time(storage_key, record.get_time())
-        return status
+        return request.status

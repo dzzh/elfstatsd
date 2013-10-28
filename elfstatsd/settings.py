@@ -68,6 +68,16 @@ REQUESTS_TO_SKIP = []
 #     ]
 REQUESTS_AGGREGATION = []
 
+#Only holds for requests matching one of the VALID_REQUESTS
+PATTERNS_TO_EXTRACT = [
+    {'name': 'uid',
+     'patterns': [
+         re.compile(r'/male_user/(?P<pattern>[\w.]+)'),
+         re.compile(r'/female_user/(?P<pattern>[\w.]+)'),
+     ]
+     }
+]
+
 # Symbols to be removed from method names (Munin cannot process them in field names)
 FORBIDDEN_SYMBOLS = re.compile(r'[.-]')
 

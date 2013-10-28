@@ -1,9 +1,10 @@
 import ConfigParser
 from called_method_storage import CalledMethodStorage
-from storage import MetadataStorage, RecordsStorage, ResponseCodesStorage
+from storage import MetadataStorage, RecordsStorage, ResponseCodesStorage, PatternsMatchesStorage
 
 
 class StorageManager():
+    """Provides interface to the statistics storages"""
 
     def __init__(self):
         self.storages = {}
@@ -15,10 +16,12 @@ class StorageManager():
         self.storages[s.name] = s
         s = CalledMethodStorage()
         self.storages[s.name] = s
+        s = PatternsMatchesStorage()
+        self.storages[s.name] = s
 
     def get(self, name):
         """
-        Return a storage given its name or KeyError if name is not found
+        Return a storage given its name or raise KeyError if the name is not found
         @param str name: name of the storage
         @return Storage storage
         """
@@ -33,7 +36,7 @@ class StorageManager():
 
     def dump(self, file_path):
         """
-        Dump statistics to the file in ConfigParser format
+        Dump statistics to the file in ConfigParser format for all managed storages
         @param str file_path: path to a file for storing data
         """
         dump = ConfigParser.RawConfigParser()

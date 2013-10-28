@@ -1,6 +1,7 @@
-from elfstatsd import settings
 import pytest
-from elfstatsd.called_method import CalledMethod
+
+from elfstatsd import settings
+from elfstatsd.dto.called_method import CalledMethod
 
 
 @pytest.fixture(scope='class')

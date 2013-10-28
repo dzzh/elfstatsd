@@ -1,9 +1,10 @@
 import math
-import settings
-from storage.storage import ResponseCodesStorage
+from elfstatsd import settings
+from elfstatsd.storage.storage import ResponseCodesStorage
 
 
 class CalledMethod():
+    """Stores statistics (latencies and response codes) for a group of requests parsed by the same regex"""
 
     def __init__(self, name):
         self.name = name
@@ -38,9 +39,6 @@ class CalledMethod():
 
     @property
     def stalled(self):
-        """
-        Return number of stalled calls
-        """
         return len([i for i in self.calls if i > getattr(settings, 'STALLED_CALL_THRESHOLD', 100000)])
 
     @property

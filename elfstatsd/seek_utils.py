@@ -8,8 +8,12 @@ logger = logging.getLogger("elfstatsd")
 
 
 def get_seek(file_path, period_start):
-    """Given a file path, find a position in it where the records for a tracked period start."""
-
+    """
+    Given a file path, find a position in it where the records for a tracked period start.
+    @param str file_path: path to log file to seek
+    @param datetime period_start: timestamp for the beginning of the tracked period
+    @return int seek
+    """
     f = open(file_path, 'r')
 
     log_parser = apachelog.parser(getattr(settings, 'ELF_FORMAT', ''))
@@ -29,7 +33,7 @@ def _find_approximate_seek_before_period_by_moving_back(f, size, log_parser, per
     @param FileIO f: file to seek
     @param long size: file size
     @param log_parser: instance of a log parser
-    @return long seek
+    @return int seek
     """
     positions = _get_seek_positions(size)
     for position in positions:
@@ -37,7 +41,7 @@ def _find_approximate_seek_before_period_by_moving_back(f, size, log_parser, per
         f.readline()  # setting seek to the beginning of the next line
         candidate = f.tell()
         record = _read_record(f, log_parser)
-        if _is_record_valid(record) and _is_record_before_time(record, period_start):
+        if _is_record_valid(record) and record.is_before_time(period_start):
             return candidate
     return 0
 
@@ -47,8 +51,8 @@ def _get_seek_positions(size):
     Return array of suggested positions to seek for a record before start of a tracked period.
 
     @param long size: file size
+    @return [int] suggested seek positions
     """
-
     current = size - 1
     result = []
 
@@ -72,15 +76,15 @@ def _find_exact_seek_before_period_by_moving_forward(f, log_parser, start_positi
     @param FileIO f: file to seek
     @param log_parser: instance of a log parser
     @param long start_position: position to start seeking from
+    @return int seek
     """
-
     seek_candidate = start_position
     f.seek(seek_candidate)
     while True:
         seek_candidate = f.tell()
         record = _read_record(f, log_parser)
         if _is_record_valid(record):
-            if _is_record_before_time(record, period_start):
+            if record.is_before_time(period_start):
                 continue
             else:
                 return seek_candidate
@@ -92,17 +96,16 @@ def _find_exact_seek_before_period_by_moving_forward(f, log_parser, start_positi
 
 
 def _read_record(f, log_parser):
+    """
+    Parse a single record from a log file
+    @param FileIO f: file to seek
+    @param parser log_parser: instance of a parser
+    @return LogRecord parsed record
+    """
     line = f.readline()
     if not line:
         return utils.END_OF_FILE
     return utils.parse_line(line, log_parser)
-
-
-def _is_record_before_time(record, time):
-    dt = record.get_time()
-    if dt < time:
-        return True
-    return False
 
 
 def _is_record_valid(record):
