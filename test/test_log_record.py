@@ -10,7 +10,7 @@ def log_record_setup(monkeypatch):
     return monkeypatch
 
 
-@pytest.mark.usefixtures("log_record_setup")
+@pytest.mark.usefixtures('log_record_setup')
 class TestLogRecord():
     def test_get_time_correct(self, monkeypatch):
         log_record_setup(monkeypatch)

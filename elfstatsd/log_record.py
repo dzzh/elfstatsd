@@ -5,7 +5,7 @@ import settings
 
 APACHELOG_DATETIME_FORMAT = '%Y%m%d%H%M%S'
 
-logger = logging.getLogger("elfstatsd")
+logger = logging.getLogger('elfstatsd')
 
 
 class LogRecord():

@@ -82,7 +82,7 @@ class ElfStatsDaemon():
         self.sm.reset(dump_file)
 
         #Save metadata
-        self.sm.get('metadata').set(dump_file, 'daemon_invoked', started.strftime("%Y-%m-%d %H:%M:%S"))
+        self.sm.get('metadata').set(dump_file, 'daemon_invoked', started.strftime('%Y-%m-%d %H:%M:%S'))
         self.sm.get('metadata').set(dump_file, 'daemon_version', 'v'+daemon_version)
 
         #Generate file names from a template and timestamps

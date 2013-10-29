@@ -4,7 +4,7 @@ import apachelog
 import settings
 import utils
 
-logger = logging.getLogger("elfstatsd")
+logger = logging.getLogger('elfstatsd')
 
 
 def get_seek(file_path, period_start):

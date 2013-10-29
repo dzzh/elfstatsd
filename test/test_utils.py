@@ -90,7 +90,7 @@ class TestLatency():
         assert parse_latency('0.54478', MILLISECOND_EXPONENT) == 545
 
 
-@pytest.mark.usefixtures("utils_setup")
+@pytest.mark.usefixtures('utils_setup')
 class TestParseLine():
     def test_valid(self, monkeypatch):
         utils_setup(monkeypatch)

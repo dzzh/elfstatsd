@@ -25,7 +25,7 @@ class FormatterWithLongerTraceback(logging.Formatter):
                                   getattr(settings, 'TRACEBACK_LENGTH', DEFAULT_TRACEBACK_LENGTH), sio)
         s = sio.getvalue()
         sio.close()
-        if s[-1:] == "\n":
+        if s[-1:] == '\n':
             s = s[:-1]
         return s
 
