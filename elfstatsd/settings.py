@@ -10,7 +10,7 @@ DAEMON_LOG_DIR = '/var/log/elfstatsd'
 INTERVAL = 300
 
 # If latency in milliseconds exceeds this value, a call is considered stalled and is reported in an additional metric.
-STALLED_CALL_THRESHOLD = 4000
+STALLED_CALL_THRESHOLD = 100000
 
 # A list of tuples containing input and output data files
 # The first element - path to the file with actual access log. May contain date and time specification,
@@ -68,15 +68,22 @@ REQUESTS_TO_SKIP = []
 #     ]
 REQUESTS_AGGREGATION = []
 
-#Only holds for requests matching one of the VALID_REQUESTS
-PATTERNS_TO_EXTRACT = [
-    {'name': 'uid',
-     'patterns': [
-         re.compile(r'/male_user/(?P<pattern>[\w.]+)'),
-         re.compile(r'/female_user/(?P<pattern>[\w.]+)'),
-     ]
-     }
-]
+# Additional patterns to be extracted from the requests. For each of them, total count of entries and
+# total number of distinct entries are counted.
+# Let say, you want to count how many users accessed your site between daemon invocations. To do this, you decide to
+# count user ids, and these ids appear in such requests as `/male_user/<uid>` and `/female_user/<uid>`.
+# Following the provided example, you will extract the uids from the requests and count them.
+# As a result, two options will be recorded in [patterns] section of a resulting file,
+# namely `uid.total` and `uid.distinct`. After one of the patterns matches, further matching stops.
+# PATTERNS_TO_EXTRACT = [
+#     {'name': 'uid',
+#      'patterns': [
+#          re.compile(r'/male_user/(?P<pattern>[\w.]+)'),
+#          re.compile(r'/female_user/(?P<pattern>[\w.]+)'),
+#          ]
+#     }
+# ]
+PATTERNS_TO_EXTRACT = []
 
 # Symbols to be removed from method names (Munin cannot process them in field names)
 FORBIDDEN_SYMBOLS = re.compile(r'[.-]')

@@ -2,6 +2,8 @@ import math
 from elfstatsd import settings
 from elfstatsd.storage.storage import ResponseCodesStorage
 
+DEFAULT_STALLED_CALL_THRESHOLD = 100000
+
 
 class CalledMethod():
     """Stores statistics (latencies and response codes) for a group of requests parsed by the same regex"""
@@ -39,7 +41,8 @@ class CalledMethod():
 
     @property
     def stalled(self):
-        return len([i for i in self.calls if i > getattr(settings, 'STALLED_CALL_THRESHOLD', 100000)])
+        return len([i for i in self.calls
+                    if i > getattr(settings, 'STALLED_CALL_THRESHOLD', DEFAULT_STALLED_CALL_THRESHOLD)])
 
     @property
     def min(self):

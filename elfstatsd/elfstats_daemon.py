@@ -9,7 +9,10 @@ import settings
 from storage.storage_manager import StorageManager
 from __init__ import __version__ as daemon_version
 
-logger = logging.getLogger("elfstatsd")
+DEFAULT_DAEMON_PID_DIR = '/var/run/elfstatsd'
+DEFAULT_INTERVAL = 300
+
+logger = logging.getLogger('elfstatsd')
 
 
 class ElfStatsDaemon():
@@ -18,11 +21,11 @@ class ElfStatsDaemon():
         self.stdout_path = '/dev/null'
         self.stderr_path = '/dev/null'
 
-        self.pidfile_path = os.path.join(getattr(settings, 'DAEMON_PID_DIR', '/var/run/elfstatsd'), 'elfstatsd.pid')
+        self.pidfile_path = os.path.join(getattr(settings, 'DAEMON_PID_DIR', DEFAULT_DAEMON_PID_DIR), 'elfstatsd.pid')
         self.pidfile_timeout = 5
 
         #Beginning of the analysis period
-        self.interval = getattr(settings, 'INTERVAL', 300)
+        self.interval = getattr(settings, 'INTERVAL', DEFAULT_INTERVAL)
         self.period_start = datetime.datetime.now() + datetime.timedelta(seconds=-self.interval)
 
         #Position in the file to start reading
