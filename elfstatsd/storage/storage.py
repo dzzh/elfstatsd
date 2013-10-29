@@ -202,3 +202,10 @@ class PatternsMatchesStorage(Storage):
             parser.set(section, str(record_key)+'.total', utils.format_value_for_munin(total))
             distinct = len(self._storage[storage_key][record_key])
             parser.set(section, str(record_key)+'.distinct', utils.format_value_for_munin(distinct))
+
+        #adding missing patterns by name
+        patterns = getattr(settings, 'PATTERNS_TO_EXTRACT', [])
+        for pattern in patterns:
+            if 'name' in pattern and not parser.has_option(section, pattern['name']+'.total'):
+                parser.set(section, pattern['name'] + '.total', utils.format_value_for_munin(0))
+                parser.set(section, pattern['name'] + '.distinct', utils.format_value_for_munin(0))

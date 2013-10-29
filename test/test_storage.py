@@ -16,6 +16,7 @@ def response_codes_storage_setup(monkeypatch):
     monkeypatch.setattr(settings, 'RESPONSE_CODES', [200, 404, 500])
     return monkeypatch
 
+
 @pytest.fixture(scope='function')
 def called_method_storage_setup(monkeypatch):
     """Monkeypatch settings setup for testing ResponseCodesStorage class."""
@@ -28,8 +29,22 @@ def called_method_storage_setup(monkeypatch):
     return monkeypatch
 
 
-class TestMetadataStorage():
+@pytest.fixture(scope='function')
+def patterns_storage_setup(monkeypatch):
+    """Monkeypatch settings setup for testing PatternsStorage class."""
+    monkeypatch.setattr(settings, 'PATTERNS_TO_EXTRACT',
+                        [
+                            {'name': 'uid',
+                             'patterns': [
+                                 re.compile(r'/male_user/(?P<pattern>[\w.]+)'),
+                                 re.compile(r'/female_user/(?P<pattern>[\w.]+)'),
+                             ]
+                             }
+                        ])
+    return monkeypatch
 
+
+class TestMetadataStorage():
     def test_storage_metadata_get_unset(self):
         storage = MetadataStorage()
         with pytest.raises(KeyError) as exc_info:
@@ -78,7 +93,6 @@ class TestMetadataStorage():
 
 
 class TestRecordsStorage():
-
     def test_storage_records_reset(self):
         storage = RecordsStorage()
         assert len(storage._storage[SK].keys()) == 0
@@ -109,7 +123,6 @@ class TestRecordsStorage():
 
 @pytest.mark.usefixtures('response_codes_storage_setup')
 class TestResponseCodesStorage():
-
     def test_storage_response_codes_reset(self, monkeypatch):
         response_codes_storage_setup(monkeypatch)
         storage = ResponseCodesStorage()
@@ -138,8 +151,8 @@ class TestResponseCodesStorage():
         assert dump.get(section, 'rc502') == 1
 
 
+@pytest.mark.usefixtures('patterns_storage_setup')
 class TestPatternsMatchesStorage():
-
     def test_storage_patterns_set(self):
         storage = PatternsMatchesStorage()
         storage.set(SK, 'pattern', 'xxx')
@@ -151,7 +164,8 @@ class TestPatternsMatchesStorage():
         assert storage.get(SK, 'pattern')['xxx'] == 3
         assert storage.get(SK, 'pattern')['yyy'] == 2
 
-    def test_storage_patterns_dump(self):
+    def test_storage_patterns_dump(self, monkeypatch):
+        patterns_storage_setup(monkeypatch)
         storage = PatternsMatchesStorage()
         dump = ConfigParser.RawConfigParser()
         storage.set(SK, 'pattern', 'xxx')
@@ -164,6 +178,10 @@ class TestPatternsMatchesStorage():
         assert dump.has_section(storage.name)
         assert dump.get(storage.name, 'pattern.total') == 5
         assert dump.get(storage.name, 'pattern.distinct') == 2
+
+        #Make sure all patterns from the settings are saved
+        assert dump.get(storage.name, 'uid.total') == 'U'
+        assert dump.get(storage.name, 'uid.distinct') == 'U'
 
     def test_storage_patterns_reset(self):
         storage = PatternsMatchesStorage()
@@ -179,7 +197,6 @@ class TestPatternsMatchesStorage():
 
 @pytest.mark.usefixtures('called_method_storage_setup')
 class TestCalledMethodStorage():
-
     def test_storage_called_method_set(self, monkeypatch):
         called_method_storage_setup(monkeypatch)
         storage = CalledMethodStorage()
