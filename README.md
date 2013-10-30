@@ -1,22 +1,24 @@
 # Elfstatsd
 
-A daemon process to aggregate statistics from access logs of different HTTP servers (Apache, Tomcat, Nginx, etc.) for visualizing these data later with monitoring tools ([Munin](http://munin-monitoring.org) is the only tool supported by now). Elfstatsd parses logs in Extended Log Format (ELF) and reports such metrics as number of requests per method, aggregated latencies (min, max, avg, percentiles) per request and response codes. The results are written to files that are updated with each new run of daemon's execution. 
+Elfstatsd is a backend component for [elfstats][].
 
-An advantage of this tool over the other existing scripts and utilities for monitoring web servers with access log files is its flexibility that allows to solve a various range of monitoring tasks. Such tasks usually require a lot of configuration effort from network administrators, as a foundation of proper visual monitoring is fine-grained tuning of the tracked requests. Elfstatsd parses the requests found in the access logs and associates them to different categories (later becoming different charts) automatically using simple regex-based rules and provides settings for advanced control over the distribution of requests into groups, if such measures are needed. It works with any ELF-based log file; it is only needed to copy access log format setting from your web server config to elfstasd.
+It is a daemon process used to parse the access logs of different HTTP servers (Apache, Tomcat, Nginx, etc.) and store the aggregated statistics in the report files. The extracted information can later be visualized with the monitoring tools ([Munin](http://munin-monitoring.org) is the only monitoring tool supported by now for visualization). Elfstatsd processes the logs in Extended Log Format (ELF) and reports such metrics as the number of calls and slow calls, aggregated latencies (min, max, avg, percentiles), response codes distribution, the number of matches for the specific patterns and more. All these statistics are reported per different request groups specified by the user and can be as detailed as needed. The results are written to files that are updated with each new round of the daemon's execution. 
 
-Daemon code is written in Python programming language and requires Python 2.6.x/2.7.x to run. Adding Python 2.4-3.x support is in plans.
+An advantage of this tool over the other existing scripts and utilities for monitoring web servers with access log files is its flexibility that allows to solve a various range of monitoring tasks. Such tasks usually require a lot of configuration effort from the network administrators, as the foundation of proper visual monitoring is fine-grained tuning of the tracked requests. Elfstatsd parses the requests found in the access logs and automatically assigns them to the different groups using simple regex-based rules. Also, it provides the settings for the advanced control over the distribution of requests into groups, if such measures are needed. It works with any ELF-based log file and it is only needed to copy the format setting from your web server config to the elfstasd.
 
-In order to display data aggregated by this daemon in Munin, a number of plugins for it are needed. These plugins are distributed separately and are available in [elfstats-munin][] repository. To simplify daemon's installation, you can check out [elfstats-env][] repository containing environment setup for the daemon (RHEL6 OS is only supported so far by elfstats-env).
+The daemon code is written in Python programming language and requires Python 2.6.x/2.7.x to run. Adding Python 3.x support is in plans.
+
+In order to display the statistics aggregated by this daemon in Munin, a number of plugins for it are needed. These plugins are distributed separately and are available in [elfstats-munin][] repository. To simplify the daemon's installation, you can check out [elfstats-env][] repository that contains a Python virtual environment with all the required dependencies (RHEL6 OS is only supported so far by *elfstats-env*).
 
 ## Build and install
 
-Unfortunately, the installation procedure is a bit more complicated than usual for Python packages. This happens because elfstatsd is a Linux daemon requiring some more permissions than average Python package does. I did my best to simplify installation as much as possible, and you are welcome to share your thoughts on making it even simpler. However, if you install elfstatsd not from the sources, but from an RPM using [a provided environment][elfstats-env], all you need to do is to install the packages with `yum`.
+Unfortunately, the installation procedure is a bit more complicated than usual for Python packages. This happens because elfstatsd is a Linux daemon requiring more permissions than the average Python package does. I did my best to simplify the installation process as much as possible, and you are welcome to share your thoughts on making it even simpler. However, if you install elfstatsd not from the sources, but from an RPM using [a provided environment][elfstats-env], all you need to do is to install the packages with `yum`.
 
-Elfstatsd is distributed via source code and RPM packages. It is planned to add elfstatsd to PyPi in future. RPM files for RHEL6_x64 can be found in [Releases](https://github.com/dzzh/elfstatsd/releases). Packaging scripts for other POSIX flavors are not yet implemented. Let me know if you are interested in having a package for your OS distribution. Also, if you need in a distribution in a different format, you can build elfstatsd from the sources as explained below.
+Elfstatsd is distributed via source code and RPM packages. It is also planned to add elfstatsd to PyPi in future. RPM files for RHEL6_x64 can be found in [Releases](https://github.com/dzzh/elfstatsd/releases). Packaging scripts for other POSIX flavors are not yet implemented. Let me know if you are interested in having a package for your OS distribution. Also, if you need in a distribution in a different format, you can build elfstatsd from the sources as explained below.
 
 It is recommended, though not required, to setup [a virtual environment](http://www.virtualenv.org) for running this daemon. An RPM with such an environment set up and ready to go is maintained in [elfstats-env][] repository. If the provided package does not suit you, you can use default Python installation or create a virtual environment yourself. Instructions to do so are provided below. 
 
-### Installing elfstatsd from source codes
+### Installing elfstatsd from the source codes
 
 * Clone the repository: `git clone https://github.com/dzzh/elfstatsd.git` and enter it with `cd elfstatsd`.
 
@@ -48,12 +50,6 @@ Elfstatsd can be configured using `settings.py` file in `elfstatsd` directory. T
 
 When updating elfstatsd to the newer version, make sure to review the changes in the configuration file. The daemon is in its early development stage, thus full backward compatibility of the settings is not guaranteed. However, all the changes will be documented in the configuration file.
 
-### Rotating log files
-
-Daemon is able to work with log files that rotate in-place or are re-created on schedule and contain timestamps in their file names. Use `DATA_FILES` option in `settings.py` to define any number of log file name templates that you need to process and specify an output file for each of them.
-
-More information about different configuration settings available will follow.
-
 ## Run
 
 elfstatsd can be run using a launcher that is installed into `/etc/init.d/elfstatsd`. To start the daemon, run `sudo /etc/init.d/elfstatsd start`; to stop the daemon, run `sudo /etc/init.d/elfstatsd stop`. 
@@ -72,7 +68,7 @@ All of these paths can be changed in `settings.py`. Make sure that a user launch
 
 ## Test
 
-### Running unit tests:
+### Running unit tests
 
 Elfstatsd uses `py.test` as its testing framework. It is not defined as requirement for a project and you don't need in it to build and run the daemon. However, in case you want to make changes to the code and run the available tests to make sure your changes didn't break the available functionality, you can execute `python setup.py test`. If `py.test` is not installed at your machine, it will be downloaded automatically.
 
@@ -83,7 +79,7 @@ To show data aggregated with elfstatsd in Munin, a set of plugins parsing aggreg
 
 ## Troubleshooting
 
-If you face problems with the daemon, start troubleshooting with inspecting its logs (they are located in `/var/log/elfstatsd` by default). If the logs do not contain any significant information to help you detecting the cause of failures, you may try to run the daemon after changing its stdout and stderr paths in `elfstatsd_daemon.py` from `/dev/null` to `/dev/tty`. This will add console logging for its initial launching stage that is not covered by the internal logging. Also, feel free to contact me or raise an issue if you have a problem you cannot resolve yourself.
+If you face problems with the daemon, start troubleshooting with inspecting its logs (they are located in `/var/log/elfstatsd` by default). If the logs do not contain any significant information to help you detecting the cause of failures, you may try to run the daemon after changing its stdout and stderr paths in `elfstatsd_daemon.py` from `/dev/null` to `/dev/tty`. This will add console logging for its initial launching stage that is not covered by the internal logging. Also, feel free to contact me or raise an issue if you have a problem that you cannot resolve yourself.
 
 ## License
 
@@ -112,5 +108,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
 [me]: https://github.com/dzzh
+[elfstats]: https://github.com/dzzh/elfstats
 [elfstats-munin]: https://github.com/dzzh/elfstats-munin
 [elfstats-env]: https://github.com/dzzh/elfstats-env
