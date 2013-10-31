@@ -1,10 +1,12 @@
 import logging
 import re
 
-ELF_FORMAT = r'%h %l %u %t \"%r\" %>s %B \"%{Referer}i\" \"%{User-Agent}i\" %{JK_LB_FIRST_NAME}n %{JK_LB_LAST_NAME}n %{JK_LB_LAST_STATE}n %I %O %D'
+#
+# Feel free to refer to https://github.com/dzzh/elfstatsd/wiki/Configuration-guide/ for additional explanations.
+#
 
-DAEMON_PID_DIR = '/var/run/elfstatsd'
-DAEMON_LOG_DIR = '/var/log/elfstatsd'
+# Format of the access log file to be processed
+ELF_FORMAT = r'%h %l %u %t \"%r\" %>s %B \"%{Referer}i\" \"%{User-Agent}i\" %{JK_LB_FIRST_NAME}n %{JK_LB_LAST_NAME}n %{JK_LB_LAST_STATE}n %I %O %D'
 
 # Time interval in seconds between two daemon invocations
 INTERVAL = 300
@@ -98,6 +100,9 @@ LATENCY_IN_MILLISECONDS = False
 
 #List of percentiles to be calculated for the requests' latencies. A list of int entries with values between 0 and 100.
 LATENCY_PERCENTILES = [50, 90, 99]
+
+DAEMON_PID_DIR = '/var/run/elfstatsd'
+DAEMON_LOG_DIR = '/var/log/elfstatsd'
 
 #
 # Settings for internal logging
