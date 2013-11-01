@@ -1,5 +1,6 @@
 from abc import ABCMeta, abstractmethod
-from collections import defaultdict, Counter
+from collections import defaultdict
+from counter_backport import Counter
 from elfstatsd import utils, settings
 
 
