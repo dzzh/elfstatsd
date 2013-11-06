@@ -195,3 +195,21 @@ class TestFormatFilename():
     def test_format_filename_with_template(self):
         dt = datetime.datetime.now()
         assert format_filename('file.log', dt) == 'file.log'
+
+    def test_format_filename_shift_error(self):
+        dt = datetime.datetime.now()
+        assert format_filename('file.log?xx', dt) == 'file.log'
+
+    def test_format_filename_shift_positive(self):
+        name = 'file.log-%Y-%m-%d-%H'
+        dt = datetime.datetime.now()
+        dt_shifted = dt + datetime.timedelta(hours=1)
+        formatted_name = dt_shifted.strftime(name)
+        assert format_filename(name+'?+3600', dt) == formatted_name
+
+    def test_format_filename_shift_negative(self):
+        name = 'file.log-%Y-%m-%d-%H'
+        dt = datetime.datetime.now()
+        dt_shifted = dt + datetime.timedelta(hours=-1)
+        formatted_name = dt_shifted.strftime(name)
+        assert format_filename(name+'?-3600', dt) == formatted_name
