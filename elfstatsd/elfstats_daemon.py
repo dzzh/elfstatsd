@@ -77,6 +77,7 @@ class ElfStatsDaemon():
         @param str previous_log_file: if in-place rotation of access logs is used, path to log file before current
         @param str dump_file: file to save aggregated data
         """
+        file_processing_starts = datetime.datetime.now()
 
         #Reset all storages
         self.sm.reset(dump_file)
@@ -126,6 +127,13 @@ class ElfStatsDaemon():
                 self._parse_file(dump_file, file_at_period_start)
                 self._parse_file(dump_file, file_at_started, read_from_start=True, read_to_time=started)
 
+        #Store execution time in metadata section of the report
+        file_processing_ends = datetime.datetime.now()
+        worked = file_processing_ends - file_processing_starts
+        self.sm.get('metadata').set(dump_file, 'daemon_worked', '%d.%d sec'
+                                                                % (worked.seconds, worked.microseconds/10000))
+
+        #Save report
         self.sm.dump(dump_file)
 
     def _parse_file(self, storage_key, file_path, read_from_start=False, read_to_time=None):
