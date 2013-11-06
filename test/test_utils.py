@@ -189,9 +189,34 @@ class TestFormatEmptyValue():
 
 class TestFormatFilename():
     def test_format_filename_no_template(self):
-        dt = datetime.datetime.now()
-        assert format_filename('file.log', dt) == 'file.log'
+        f, d = format_filename('file.log', datetime.datetime.now())
+        assert f == 'file.log'
+        assert d == datetime.timedelta()
 
     def test_format_filename_with_template(self):
+        f, d = format_filename('file.log', datetime.datetime.now())
+        assert f == 'file.log'
+        assert d == datetime.timedelta()
+
+    def test_format_filename_shift_error(self):
+        f, d = format_filename('file.log?xx', datetime.datetime.now())
+        assert f == 'file.log'
+        assert d == datetime.timedelta()
+
+    def test_format_filename_shift_positive(self):
+        name = 'file.log-%Y-%m-%d-%H'
         dt = datetime.datetime.now()
-        assert format_filename('file.log', dt) == 'file.log'
+        dt_shifted = dt + datetime.timedelta(hours=1)
+        formatted_name = dt_shifted.strftime(name)
+        f, d = format_filename(name+'?+3600', dt)
+        assert f == formatted_name
+        assert d == datetime.timedelta(hours=1)
+
+    def test_format_filename_shift_negative(self):
+        name = 'file.log-%Y-%m-%d-%H'
+        dt = datetime.datetime.now()
+        dt_shifted = dt + datetime.timedelta(hours=-1)
+        formatted_name = dt_shifted.strftime(name)
+        f, d = format_filename(name+'?-3600', dt)
+        assert f == formatted_name
+        assert d == datetime.timedelta(hours=-1)

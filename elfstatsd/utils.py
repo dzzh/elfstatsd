@@ -1,5 +1,6 @@
 import logging
 import apachelog
+import datetime
 import log_record
 
 SECOND_EXPONENT = 0
@@ -95,5 +96,20 @@ def format_value_for_munin(value, zero_allowed=False):
 
 
 def format_filename(name, dt):
-    """Generate file name from a template containing formatted string and time value"""
-    return dt.strftime(name)
+    """
+    Generate file name from a template containing formatted string and time value
+    Template may contain datetime specifiers and '?' symbol with a following time shift in seconds.
+    @param str name: filename template
+    @param datetime dt: datetime to use for generation
+    @return (str, timedelta) generated filename with all specifiers resolved and timedelta with time shift
+    """
+    if not '?' in name:
+        return dt.strftime(name), datetime.timedelta()
+
+    filename, shift = name.split('?')[0], name.split('?')[1]
+    try:
+        td = datetime.timedelta(seconds=int(shift))
+        return (dt + td).strftime(filename), td
+    except ValueError:
+        logger.warn('Daemon was not able to recognize time shift in string %s' % name)
+        return dt.strftime(filename), datetime.timedelta()
