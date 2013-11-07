@@ -189,34 +189,60 @@ class TestFormatEmptyValue():
 
 class TestFormatFilename():
     def test_format_filename_no_template(self):
-        f, d = format_filename('file.log', datetime.datetime.now())
+        f, p = format_filename('file.log', datetime.datetime.now())
         assert f == 'file.log'
-        assert d == datetime.timedelta()
+        assert p['ts'] == datetime.timedelta()
+        assert p['ts-name-only'] is False
 
     def test_format_filename_with_template(self):
-        f, d = format_filename('file.log', datetime.datetime.now())
-        assert f == 'file.log'
-        assert d == datetime.timedelta()
+        dt = datetime.datetime.now()
+        f, p = format_filename('file.log-%y-%m-%d-%H', dt)
+        assert f == dt.strftime('file.log-%y-%m-%d-%H')
+        assert p['ts'] == datetime.timedelta()
+        assert p['ts-name-only'] is False
 
     def test_format_filename_shift_error(self):
-        f, d = format_filename('file.log?xx', datetime.datetime.now())
+        f, p = format_filename('file.log?xx', datetime.datetime.now())
         assert f == 'file.log'
-        assert d == datetime.timedelta()
+        assert p['ts'] == datetime.timedelta()
+        assert p['ts-name-only'] is False
 
     def test_format_filename_shift_positive(self):
         name = 'file.log-%Y-%m-%d-%H'
         dt = datetime.datetime.now()
         dt_shifted = dt + datetime.timedelta(hours=1)
         formatted_name = dt_shifted.strftime(name)
-        f, d = format_filename(name+'?+3600', dt)
+        f, p = format_filename(name+'?ts=+3600', dt)
         assert f == formatted_name
-        assert d == datetime.timedelta(hours=1)
+        assert p['ts'] == datetime.timedelta(hours=1)
+        assert p['ts-name-only'] is False
 
     def test_format_filename_shift_negative(self):
         name = 'file.log-%Y-%m-%d-%H'
         dt = datetime.datetime.now()
         dt_shifted = dt + datetime.timedelta(hours=-1)
         formatted_name = dt_shifted.strftime(name)
-        f, d = format_filename(name+'?-3600', dt)
+        f, p = format_filename(name+'?ts=-3600', dt)
         assert f == formatted_name
-        assert d == datetime.timedelta(hours=-1)
+        assert p['ts'] == datetime.timedelta(hours=-1)
+        assert p['ts-name-only'] is False
+
+    def test_format_filename_name_only_true(self):
+        name = 'file.log-%Y-%m-%d-%H'
+        dt = datetime.datetime.now()
+        dt_shifted = dt + datetime.timedelta(hours=1)
+        formatted_name = dt_shifted.strftime(name)
+        f, p = format_filename(name+'?ts=+3600&ts-name-only=true', dt)
+        assert f == formatted_name
+        assert p['ts'] == datetime.timedelta()
+        assert p['ts-name-only'] is True
+
+    def test_format_filename_name_only_false(self):
+        name = 'file.log-%Y-%m-%d-%H'
+        dt = datetime.datetime.now()
+        dt_shifted = dt + datetime.timedelta(hours=1)
+        formatted_name = dt_shifted.strftime(name)
+        f, p = format_filename(name+'?ts=+3600&ts-name-only=false', dt)
+        assert f == formatted_name
+        assert p['ts'] == datetime.timedelta(hours=1)
+        assert p['ts-name-only'] is False

@@ -87,8 +87,8 @@ class ElfStatsDaemon():
         self.sm.get('metadata').set(dump_file, 'daemon_version', 'v'+daemon_version)
 
         #Generate file names from a template and timestamps
-        file_at_period_start, dt_at_period_start = utils.format_filename(current_log_file, self.period_start)
-        file_at_started, dt_at_started = utils.format_filename(current_log_file, started)
+        file_at_period_start, params_at_period_start = utils.format_filename(current_log_file, self.period_start)
+        file_at_started, params_at_started = utils.format_filename(current_log_file, started)
 
         if not os.path.exists(file_at_started):
             logger.error('File %s is not found and will not be processed' % file_at_started)
@@ -101,7 +101,7 @@ class ElfStatsDaemon():
             #and it has to be set to period_start
             if not file_at_period_start in self.seek.keys():
                 self.seek[file_at_period_start] = seek_utils.get_seek(
-                    file_at_period_start, self.period_start + dt_at_period_start)
+                    file_at_period_start, self.period_start + params_at_period_start['ts'])
 
             if file_at_period_start == file_at_started:
                 #All the records we are interested in are in the same file
@@ -113,21 +113,21 @@ class ElfStatsDaemon():
                 read_from_start = True if current_file_size < cur_seek or cur_seek == 0 else False
 
                 if read_from_start and previous_log_file:
-                    replaced_file, dt_at_replaced = utils.format_filename(previous_log_file, started)
+                    replaced_file, params_at_replaced = utils.format_filename(previous_log_file, started)
 
                     if not os.path.exists(replaced_file):
                         logger.error('File %s is not found and will not be processed' % replaced_file)
                     else:
                         self.seek[replaced_file] = \
                             cur_seek if cur_seek > 0 else seek_utils.get_seek(
-                                replaced_file, self.period_start + dt_at_replaced)
+                                replaced_file, self.period_start + params_at_replaced['ts'])
                         self._parse_file(dump_file, replaced_file)
 
-                self._parse_file(dump_file, file_at_started, read_from_start, started + dt_at_started)
+                self._parse_file(dump_file, file_at_started, read_from_start, started + params_at_started['ts'])
             else:
                 #First read previous file to the end, then current from beginning
                 self._parse_file(dump_file, file_at_period_start)
-                self._parse_file(dump_file, file_at_started, True, started + dt_at_started)
+                self._parse_file(dump_file, file_at_started, True, started + params_at_started['ts'])
 
         #Store execution time in metadata section of the report
         file_processing_ends = datetime.datetime.now()

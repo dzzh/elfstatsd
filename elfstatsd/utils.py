@@ -1,6 +1,7 @@
 import logging
 import apachelog
 import datetime
+import urlparse
 import log_record
 
 SECOND_EXPONENT = 0
@@ -98,18 +99,55 @@ def format_value_for_munin(value, zero_allowed=False):
 def format_filename(name, dt):
     """
     Generate file name from a template containing formatted string and time value
-    Template may contain datetime specifiers and '?' symbol with a following time shift in seconds.
+    Template may contain datetime specifiers and optionally additional key=value parameters after '?' symbol
+    and separated by '&' symbol (as in URLs).
+
+    Supported parameters:
+    * ts (int) - time shift in seconds, positive or negative. Default 0
+    * ts-name-only (boolean) - if true, only use time shift to correctly resolve the file name,
+    otherwise also for records. Default false.
+
+    Example: '/var/log/httpd/apache.log-%Y-%m-%d-%H?ts=-3600&ts-name-only=true' -
+    shift time by 3600 seconds (or 1 hour) back and use this shift only to resolve the name.
+
     @param str name: filename template
     @param datetime dt: datetime to use for generation
-    @return (str, timedelta) generated filename with all specifiers resolved and timedelta with time shift
+    @return (str, {}) generated filename with all specifiers resolved and a dict of additional parameters
     """
     if not '?' in name:
-        return dt.strftime(name), datetime.timedelta()
+        return dt.strftime(name), _default_filename_params()
 
-    filename, shift = name.split('?')[0], name.split('?')[1]
+    filename, params = name.split('?')[0], dict(urlparse.parse_qsl(name.split('?')[1]))
+
     try:
-        td = datetime.timedelta(seconds=int(shift))
-        return (dt + td).strftime(filename), td
+        if 'ts' in params:
+            td = datetime.timedelta(seconds=int(params['ts']))
+            filename = (dt + td).strftime(filename)
+            params['ts'] = td
+        else:
+            filename = dt.strftime(filename)
+            params['ts'] = datetime.timedelta()
+
+        if 'ts-name-only' in params and params['ts-name-only'].lower() == 'true':
+
+            # Here we reset ts as it is not needed anymore.
+            # This allows to avoid checking for ts-name-only at the clients
+            # However, if the ts behavior will change, this may have to be re-thought.
+            params['ts'] = datetime.timedelta()
+
+            params['ts-name-only'] = True
+        else:
+            params['ts-name-only'] = False
+
+        return filename, params
+
     except ValueError:
-        logger.warn('Daemon was not able to recognize time shift in string %s' % name)
-        return dt.strftime(filename), datetime.timedelta()
+        logger.warn('Daemon was not able to recognize parameters in string %s' % name)
+        return dt.strftime(filename), _default_filename_params()
+
+
+def _default_filename_params():
+    params = dict()
+    params['ts'] = datetime.timedelta()
+    params['ts-name-only'] = False
+    return params
