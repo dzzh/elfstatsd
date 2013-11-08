@@ -64,9 +64,9 @@ def parse_line(line, log_parser, latency_in_millis=False):
     record.line = line
 
     request = data['%r']
-    if len(request) > 1:
+    try:
         record.raw_request = request.split(' ')[1]
-    else:
+    except IndexError:
         logger.warn('Parser was not able to parse the request %s: ' % request)
         logger.warn('Record with error: %s' % line)
         return None

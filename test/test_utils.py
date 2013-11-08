@@ -125,6 +125,16 @@ class TestParseLine():
 
         assert record is None
 
+    def test_wrong_request(self, monkeypatch):
+        utils_setup(monkeypatch)
+
+        line = u'172.19.0.40 - - [08/Aug/2013:10:59:59 +0200] "\x80w\x01\x03\x01" 200 8563 "-" ' \
+               u'"Apache-HttpClient/4.2.1 (java 1.5)" community1 community1 OK 14987 8785 53047'
+        parser = apachelog.parser(settings.ELF_FORMAT)
+        record = parse_line(line, parser)
+
+        assert record is None
+
     def test_with_latency_in_milliseconds(self, monkeypatch):
         utils_setup(monkeypatch)
 
